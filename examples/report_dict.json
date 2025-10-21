@@ -1,0 +1,63 @@
+{
+    "desc": {
+        "problem_type": "Table Classification",
+        "model_name": "mlp",
+        "model_parameters": {
+            "__init__": {
+                "input_shape": 4,
+                "num_classes": 3,
+                "weights_path": "weights.pth"
+            },
+            "compute_metrics": {},
+            "reset_metrics": {},
+            "update_metrics": {},
+            "train_function": {
+                "lr": 0.001,
+                "num_epochs": 5,
+                "save_model_weigths": "weights.pth"
+            },
+            "get_grad": {},
+            "predict_function": {}
+        },
+        "dataset_loader_name": "iris",
+        "dataloader_parameters": {
+            "__init__": {},
+            "get_dataset": {},
+            "get_test_data": {},
+            "get_train_data": {},
+            "get_validation_data": {}
+        }
+    },
+    "experiments": {
+        "attack": "pgd",
+        "variable_param_name": "eps",
+        "fixed_attack_params": {
+            "eps_step": 0.0392156862745098,
+            "clip_min": -100,
+            "clip_max": 100
+        },
+        "metrics": {
+            "0.0784313725490196": {
+                "Accuracy": 0.8333333333333334,
+                "Accuracy_user": 83.33333333333334,
+                "ASR": 0.038461538461538464,
+                "Clean accuracy": 0.8666666666666667,
+                "MAE": 0.0784313753247261
+            },
+            "0.19607843137254902": {
+                "Accuracy": 0.8333333333333334,
+                "Accuracy_user": 83.33333333333334,
+                "ASR": 0.038461538461538464,
+                "Clean accuracy": 0.8666666666666667,
+                "MAE": 0.19607843458652496
+            },
+            "0.5882352941176471": {
+                "Accuracy": 0.6333333333333333,
+                "Accuracy_user": 63.33333333333333,
+                "ASR": 0.2692307692307692,
+                "Clean accuracy": 0.8666666666666667,
+                "MAE": 0.3921568691730499
+            }
+        }
+    }
+}

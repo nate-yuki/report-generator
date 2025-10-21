@@ -1,855 +1,396 @@
-#!/usr/bin/env python3
-"""
-HTML Report Generator for Deep Learning Model Robustness Evaluation
-
-This script generates a comprehensive HTML report from JSON data containing
-robustness evaluation results of deep learning models.
-"""
-
 import json
-import argparse
-from pathlib import Path
-from datetime import datetime
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-import pandas as pd
+import os
+from collections import OrderedDict
+from typing import Any, Dict, List, Tuple
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
-class RobustnessReportGenerator:
-    def __init__(self, json_data):
-        """Initialize the report generator with JSON data."""
-        self.data = json_data
-        self.experiments_df = pd.DataFrame(json_data['experiments'])
-        
-    def generate_html_report(self, output_file="robustness_report.html"):
-        """Generate the complete HTML report."""
-        html_content = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep Learning Model Robustness Evaluation Report</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        {self._get_css_styles()}
-    </style>
-</head>
-<body>
-    <div class="container">
-        {self._generate_header()}
-        {self._generate_model_info_section()}
-        {self._generate_visualizations_section()}
-        {self._generate_results_tables_section()}
-        {self._generate_footer()}
-    </div>
-</body>
-</html>
-        """
-        
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        
-        print(f"Report generated successfully: {output_file}")
-        return output_file
-    
-    def _get_css_styles(self):
-        """Return CSS styles for the report."""
-        return """
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f8f9fa;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            border-radius: 10px;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .header {
-            text-align: center;
-            padding: 30px 0;
-            border-bottom: 3px solid #007bff;
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            color: #007bff;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .header .subtitle {
-            color: #6c757d;
-            font-size: 1.2em;
-        }
-        
-        .section {
-            margin-bottom: 40px;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        
-        .section-title {
-            color: #007bff;
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .model-info {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .model-info .section-title {
-            color: white;
-            border-bottom-color: rgba(255,255,255,0.3);
-        }
-        
-        .visualizations {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-        
-        .visualizations .section-title {
-            color: white;
-            border-bottom-color: rgba(255,255,255,0.3);
-        }
-        
-        .results {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-        }
-        
-        .results .section-title {
-            color: white;
-            border-bottom-color: rgba(255,255,255,0.3);
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .info-card {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .info-card h3 {
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-        
-        .info-card ul {
-            list-style: none;
-        }
-        
-        .info-card li {
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .info-card li:last-child {
-            border-bottom: none;
-        }
-        
-        .chart-container {
-            background: rgba(255,255,255,0.9);
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            background: rgba(255,255,255,0.9);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            color: #007bff;
-            font-weight: 500;
-        }
-        
-        th {
-            background-color: rgba(0,123,255,0.8);
-            color: white;
-            font-weight: 600;
-        }
-        
-        tr:nth-child(even) {
-            background-color: rgba(255,255,255,0.5);
-        }
-        
-        tr:hover {
-            background-color: rgba(255,255,255,0.8);
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #6c757d;
-            border-top: 1px solid #e9ecef;
-            margin-top: 30px;
-        }
-        
-        .metric-highlight {
-            font-weight: bold;
-            color: #007bff;
-        }
-        
-        .clear-data-row {
-            border-top: 4px solid #2ECC71 !important;
-            border-bottom: 4px solid #2ECC71 !important;
-            background-color: rgba(46, 204, 113, 0.1) !important;
-            font-weight: 600;
-        }
-        
-        .clear-data-row td {
-            color: #27AE60 !important;
-            font-weight: 600;
-        }
-        
-        @media print {
-            body {
-                background: white;
-            }
-            .container {
-                box-shadow: none;
-                margin: 0;
-            }
-            .section {
-                page-break-inside: avoid;
-            }
-        }
-        """
-    
-    def _generate_header(self):
-        """Generate the report header."""
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        return f"""
-        <div class="header">
-            <h1>Deep Learning Model Robustness Evaluation Report</h1>
-            <p class="subtitle">Generated on {current_time}</p>
-        </div>
-        """
-    
-    def _generate_model_info_section(self):
-        """Generate the model information section."""
-        desc = self.data.get('desc', {})
-        model = desc.get('model', 'Unknown')
-        model_params = desc.get('model_parameters', {})
-        
-        # Get unique attacks and their parameters
-        attacks = {}
-        for exp in self.data['experiments']:
-            attack = exp['attack']
-            eps = exp.get('eps', 'N/A')
-            if attack not in attacks:
-                attacks[attack] = []
-            if eps not in attacks[attack]:
-                attacks[attack].append(eps)
-        
-        model_params_html = ""
-        if model_params:
-            model_params_html = "<ul>"
-            for key, value in model_params.items():
-                model_params_html += f"<li><strong>{key}:</strong> {value}</li>"
-            model_params_html += "</ul>"
+PALETTE = {
+    "dark_blue": "#2b4f66",
+    "muted_blue": "#4f6d7a",
+    "gray": "#6e7580",
+    "light_gray": "#d9dbe0",
+}
+
+
+def read_report(path: str) -> Dict[str, Any]:
+    # Load JSON data
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Error: File {path} not found.")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in {path}: {e}")
+        return None
+
+
+def safe_float(s: str):
+    try:
+        return float(s)
+    except Exception:
+        return None
+
+
+def format_value(v: Any) -> str:
+    if isinstance(v, float):
+        return f"{v:.5f}"
+    if isinstance(v, int):
+        return f"{v}"
+    return str(v)
+
+
+def flatten_param_dict(d: Dict[str, Any], indent: int = 0) -> List[str]:
+    """Flatten the 1-level dict where values are dicts possibly empty.
+    Replace empty dicts with the string 'default'.
+    For nested dicts, print sub-items on new lines with indentation."""
+    out = []
+    pad = "    " * indent
+    for k, v in d.items():
+        if isinstance(v, dict):
+            if not v:  # Empty dict
+                out.append(f"{pad}{k}: default")
+            else:
+                out.append(f"{pad}{k}:")
+                for ik, iv in v.items():
+                    out.extend(flatten_param_dict({ik: iv}, indent + 1))
         else:
-            model_params_html = "<p>No additional parameters specified</p>"
-        
-        attacks_html = "<ul>"
-        for attack, eps_values in attacks.items():
-            attacks_html += f"<li><strong>{attack}:</strong> ε values: {', '.join(map(str, eps_values))}</li>"
-        attacks_html += "</ul>"
-        
-        return f"""
-        <div class="section model-info">
-            <h2 class="section-title">1. Model and Experiment Configuration</h2>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Model Information</h3>
-                    <ul>
-                        <li><strong>Model:</strong> {model}</li>
-                    </ul>
-                    <h4 style="margin-top: 15px;">Model Parameters</h4>
-                    {model_params_html}
-                </div>
-                <div class="info-card">
-                    <h3>Attack Methods and Parameters</h3>
-                    {attacks_html}
-                    <p style="margin-top: 15px;"><em>Total experiments: {len(self.data['experiments'])}</em></p>
-                </div>
-            </div>
-        </div>
-        """
-    
-    def _generate_visualizations_section(self):
-        """Generate the data visualizations section."""
-        # Create interactive plots
-        plots_html = []
-        
-        # Plot 1: Metrics comparison across attacks
-        fig1 = self._create_metrics_comparison_plot()
-        plots_html.append(f'<div class="chart-container">{fig1.to_html(include_plotlyjs=False, div_id="plot1")}</div>')
-        
-        # Plot 2: Epsilon vs Accuracy/ASR line plots
-        fig2 = self._create_epsilon_lineplot()
-        plots_html.append(f'<div class="chart-container">{fig2.to_html(include_plotlyjs=False, div_id="plot2")}</div>')
-        
-        # Plot 3: Radar chart for attack comparison
-        fig3 = self._create_radar_chart()
-        plots_html.append(f'<div class="chart-container">{fig3.to_html(include_plotlyjs=False, div_id="plot3")}</div>')
-        
-        return f"""
-        <div class="section visualizations">
-            <h2 class="section-title">2. Data Visualizations</h2>
-            {''.join(plots_html)}
-        </div>
-        """
-    
-    def _create_metrics_comparison_plot(self):
-        """Create a comparison plot of metrics across different attacks."""
-        # Group by attack and calculate mean metrics
-        attack_groups = self.experiments_df.groupby('attack').agg({
-            'metrics': lambda x: {
-                'acc': [m['acc'] for m in x],
-                'asr': [m['asr'] for m in x],
-                'f1': [m['f1'] for m in x]
-            }
-        })
-        
-        fig = make_subplots(
-            rows=1, cols=3,
-            subplot_titles=('Accuracy', 'Attack Success Rate', 'F1 Score'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}, {"secondary_y": False}]]
-        )
-        
-        # Separate clear data from attacks
-        attacks = []
-        acc_values = []
-        asr_values = []
-        f1_values = []
-        colors_acc = []
-        colors_asr = []
-        colors_f1 = []
-        
-        # First add Clear Data if it exists
-        clear_data = None
-        if 'no_attack' in attack_groups.index:
-            clear_data = attack_groups.loc['no_attack', 'metrics']
-            attacks.append('Clear Data')
-            acc_values.append(sum(clear_data['acc']) / len(clear_data['acc']))
-            asr_values.append(sum(clear_data['asr']) / len(clear_data['asr']))
-            f1_values.append(sum(clear_data['f1']) / len(clear_data['f1']))
-            colors_acc.append('rgba(46, 204, 113, 0.8)')  # Green for clear data
-            colors_asr.append('rgba(46, 204, 113, 0.8)')
-            colors_f1.append('rgba(46, 204, 113, 0.8)')
-        
-        # Then add other attacks
-        for attack in attack_groups.index:
-            if attack != 'no_attack':
-                attacks.append(attack)
-                metrics_data = attack_groups.loc[attack, 'metrics']
-                acc_values.append(sum(metrics_data['acc']) / len(metrics_data['acc']))
-                asr_values.append(sum(metrics_data['asr']) / len(metrics_data['asr']))
-                f1_values.append(sum(metrics_data['f1']) / len(metrics_data['f1']))
-                colors_acc.append('rgba(55, 128, 191, 0.7)')
-                colors_asr.append('rgba(219, 64, 82, 0.7)')
-                colors_f1.append('rgba(128, 177, 211, 0.7)')
-        
-        fig.add_trace(
-            go.Bar(x=attacks, y=acc_values, name='Accuracy', marker_color=colors_acc),
-            row=1, col=1
-        )
-        
-        fig.add_trace(
-            go.Bar(x=attacks, y=asr_values, name='ASR', marker_color=colors_asr),
-            row=1, col=2
-        )
-        
-        fig.add_trace(
-            go.Bar(x=attacks, y=f1_values, name='F1 Score', marker_color=colors_f1),
-            row=1, col=3
-        )
-        
-        fig.update_layout(
-            title_text="Average Metrics: Clear Data vs Attack Methods",
-            showlegend=False,
-            height=500
-        )
-        
-        return fig
-    
-    def _create_epsilon_lineplot(self):
-        """Create line plots showing the relationship between epsilon values and metrics."""
-        # Prepare data for line plots
-        plot_data = []
-        no_attack_data = {}
-        
-        # Check if any non-no_attack experiments use eps=0
-        other_attacks_use_zero = False
-        for _, row in self.experiments_df.iterrows():
-            if row['attack'] != 'no_attack' and row['eps'] == 0:
-                other_attacks_use_zero = True
+            # Format all floats to 4 decimals, keep ints as is
+            if isinstance(v, (int, float)):
+                out.append(f"{pad}{k}: {format_value(v)}")
+            else:
+                out.append(f"{pad}{k}: {v if v else 'default'}")
+    return out
+
+
+def ensure_metric_floats(metrics: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
+    out = OrderedDict()
+    for param, m in metrics.items():
+        out[param] = {k: float(v) for k, v in m.items()}
+    return out
+
+
+def make_tables(report: Dict[str, Any], _out_dir: str = ".") -> str:
+    """Return HTML for the single metrics table, with Clean X after X (case-insensitive)."""
+    experiments = report["experiments"]
+    var_name = experiments["variable_param_name"]
+    metrics = ensure_metric_floats(experiments["metrics"])
+
+    # columns: var_name, then metric keys, with Clean X after X (case-insensitive)
+    sample = next(iter(metrics.values()))
+    metric_keys = list(sample.keys())
+
+    # Move "user" metrics to the end
+    user_metrics = [k for k in metric_keys if "user" in k.lower()]
+    non_user_metrics = [k for k in metric_keys if "user" not in k.lower()]
+
+    # Build mapping: for each X, if Clean X (case-insensitive) exists, place after X
+    used = set()
+    ordered_keys = []
+    lower_keys = {k.lower(): k for k in non_user_metrics}
+    for k in non_user_metrics:
+        kl = k.lower()
+        if kl.startswith("clean "):
+            continue
+        ordered_keys.append(k)
+        used.add(k)
+        clean_key = None
+        clean_name = f"clean {k}".lower()
+        for mk in non_user_metrics:
+            if mk.lower() == clean_name:
+                clean_key = mk
                 break
-        
-        for _, row in self.experiments_df.iterrows():
-            attack = row['attack']
-            eps = row['eps']
-            metrics = row['metrics']
-            
-            if attack == 'no_attack':
-                # Store no_attack data for horizontal reference lines
-                no_attack_data = {
-                    'acc': metrics['acc'],
-                    'asr': metrics['asr'],
-                    'f1': metrics['f1']
-                }
-                # Only include in plot data if other attacks also use eps=0
-                if other_attacks_use_zero and eps == 0:
-                    plot_data.append({
-                        'attack': 'Clear Data',
-                        'eps': eps,
-                        'acc': metrics['acc'],
-                        'asr': metrics['asr'],
-                        'f1': metrics['f1']
-                    })
+        if clean_key:
+            ordered_keys.append(clean_key)
+            used.add(clean_key)
+    # Add any remaining keys (e.g., only Clean X present)
+    for k in non_user_metrics:
+        if k not in used:
+            ordered_keys.append(k)
+    # Add user metrics at the end
+    for k in user_metrics:
+        ordered_keys.append(k)
+
+    # Build HTML table
+    html = []
+    html.append('<table class="metrics-table">')
+    # header
+    header_cells = [f"<th>{var_name}</th>"] + [f"<th>{k}</th>" for k in ordered_keys]
+    html.append("<tr>" + "".join(header_cells) + "</tr>")
+
+    for param, m in metrics.items():
+        row = [f"<td>{format_value(safe_float(param) if safe_float(param) is not None else param)}</td>"]
+        for k in ordered_keys:
+            row.append(f'<td>{format_value(m.get(k, ""))}</td>')
+        html.append("<tr>" + "".join(row) + "</tr>")
+
+    html.append("</table>")
+    return "\n".join(html)
+
+
+def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
+    experiments = report["experiments"]
+    var_name = experiments["variable_param_name"]
+    metrics = ensure_metric_floats(experiments["metrics"])
+
+    # Determine x values: try to convert keys to floats
+    raw_x = list(metrics.keys())
+    x_converted = [safe_float(k) for k in raw_x]
+    can_plot_numeric = all(v is not None for v in x_converted)
+    if can_plot_numeric:
+        x = [float(v) for v in x_converted]
+    else:
+        x = list(range(len(raw_x)))
+
+    sample = next(iter(metrics.values()))
+    metric_keys = list(sample.keys())
+
+    # Move "user" metrics to the end
+    user_metrics = [k for k in metric_keys if "user" in k.lower()]
+    non_user_metrics = [k for k in metric_keys if "user" not in k.lower()]
+
+    # detect Clean {X} patterns (case-insensitive)
+    clean_map = {}
+    for k in metric_keys:
+        if k.lower().startswith("clean "):
+            base = k[6:].strip()
+            clean_map[base.lower()] = k
+
+    generated = []
+    # For each base metric to plot: either k or base if clean exists
+    to_plot_bases = []
+    for k in non_user_metrics:
+        if k.lower().startswith("clean "):
+            continue
+        to_plot_bases.append(k)
+    for k in user_metrics:
+        if k.lower().startswith("clean "):
+            continue
+        to_plot_bases.append(k)
+
+    for metric_name in to_plot_bases:
+        ys = [metrics[p].get(metric_name, float("nan")) for p in raw_x]
+
+        plt.figure(figsize=(18.72 / 1.5, 12.48 / 1.5))  # 30% larger than before
+        plt.rcParams.update({
+            "font.size": 26,
+            "axes.labelsize": 26,
+            "axes.titlesize": 28,
+            "xtick.labelsize": 24,
+            "ytick.labelsize": 24,
+            "legend.fontsize": 24,
+            "lines.linewidth": 5,
+            "lines.markersize": 20,
+            "axes.titlepad": 20,  # Increase space between title and plot
+        })
+        plt.plot(x, ys, marker="o", color="#5a8bb0", label="Attacked")
+
+        clean_key = clean_map.get(metric_name.lower())
+        legend_needed = False
+        if clean_key:
+            ys_clean = [metrics[p].get(clean_key, float("nan")) for p in raw_x]
+            all_same = all(abs(y - ys_clean[0]) < 1e-9 for y in ys_clean)
+            if not all_same:
+                print(f"Warning: Clean {metric_name} values differ across attack params")
+            avg_clean = float(ys_clean[0])
+            if can_plot_numeric:
+                plt.axhline(avg_clean, color="#bcd4e6", linestyle="--", label="Clean")
             else:
-                plot_data.append({
-                    'attack': attack,
-                    'eps': eps,
-                    'acc': metrics['acc'],
-                    'asr': metrics['asr'],
-                    'f1': metrics['f1']
-                })
-        
-        df_plot = pd.DataFrame(plot_data)
-        
-        # Create subplots for each metric
-        fig = make_subplots(
-            rows=1, cols=3,
-            subplot_titles=('Accuracy vs ε', 'Attack Success Rate vs ε', 'F1 Score vs ε'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}, {"secondary_y": False}]]
-        )
-        
-        # Define colors for different attacks
-        colors = {
-            'pgd': '#FF6B6B',
-            'ifgsm': '#4ECDC4',
-            'fgsm': '#45B7D1',
-            'cw': '#96CEB4',
-            'bim': '#FFEAA7',
-            'Clear Data': '#2ECC71'  # Green for clear data
-        }
-        
-        metrics = ['acc', 'asr', 'f1']
-        metric_names = ['Accuracy', 'Attack Success Rate', 'F1 Score']
-        
-        for i, (metric, metric_name) in enumerate(zip(metrics, metric_names), 1):
-            # Plot lines for each attack method
-            unique_attacks = df_plot['attack'].unique()
-            
-            for attack in unique_attacks:
-                attack_data = df_plot[df_plot['attack'] == attack].sort_values('eps')
-                color = colors.get(attack, '#95A5A6')
-                
-                # Use different line style for Clear Data
-                line_style = dict(color=color, width=4, dash='dot') if attack == 'Clear Data' else dict(color=color, width=3)
-                
-                fig.add_trace(
-                    go.Scatter(
-                        x=attack_data['eps'],
-                        y=attack_data[metric],
-                        mode='lines+markers',
-                        name=f'{attack}' if i == 1 else f'{attack}',
-                        line=line_style,
-                        marker=dict(size=10 if attack == 'Clear Data' else 8, color=color),
-                        showlegend=True if i == 1 else False,
-                        legendgroup=attack
-                    ),
-                    row=1, col=i
-                )
-            
-            # Add horizontal reference line for no_attack (clean data performance)
-            # Only add if Clear Data is not already plotted as a line
-            if no_attack_data and metric in no_attack_data and 'Clear Data' not in unique_attacks:
-                ref_value = no_attack_data[metric]
-                max_eps = df_plot['eps'].max() if not df_plot.empty else 10
-                
-                fig.add_trace(
-                    go.Scatter(
-                        x=[0, max_eps],
-                        y=[ref_value, ref_value],
-                        mode='lines',
-                        name='Clear Data Baseline' if i == 1 else 'Clear Data Baseline',
-                        line=dict(color='#2ECC71', width=3, dash='dash'),
-                        showlegend=True if i == 1 else False,
-                        legendgroup='clear'
-                    ),
-                    row=1, col=i
-                )
-        
-        # Update layout
-        fig.update_layout(
-            title_text="Attack Performance vs Epsilon Values",
-            height=500,
-            showlegend=True,
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
-            )
-        )
-        
-        # Update x and y axis labels
-        for i in range(1, 4):
-            fig.update_xaxes(title_text="Epsilon (ε)", row=1, col=i)
-        
-        fig.update_yaxes(title_text="Accuracy", row=1, col=1)
-        fig.update_yaxes(title_text="Attack Success Rate", row=1, col=2)
-        fig.update_yaxes(title_text="F1 Score", row=1, col=3)
-        
-        return fig
-    
-    def _create_radar_chart(self):
-        """Create a radar chart comparing attacks across all metrics."""
-        # Calculate average metrics for each attack
-        attack_metrics = {}
-        for _, row in self.experiments_df.iterrows():
-            attack = row['attack']
-            if attack not in attack_metrics:
-                attack_metrics[attack] = {'acc': [], 'asr': [], 'f1': []}
-            
-            attack_metrics[attack]['acc'].append(row['metrics']['acc'])
-            attack_metrics[attack]['asr'].append(row['metrics']['asr'])
-            attack_metrics[attack]['f1'].append(row['metrics']['f1'])
-        
-        fig = go.Figure()
-        
-        # Process Clear Data first if it exists
-        if 'no_attack' in attack_metrics:
-            clear_metrics = attack_metrics['no_attack']
-            avg_acc = sum(clear_metrics['acc']) / len(clear_metrics['acc'])
-            avg_asr = sum(clear_metrics['asr']) / len(clear_metrics['asr'])
-            avg_f1 = sum(clear_metrics['f1']) / len(clear_metrics['f1'])
-            
-            fig.add_trace(go.Scatterpolar(
-                r=[avg_acc, 1-avg_asr, avg_f1],  # Invert ASR for better visualization
-                theta=['Accuracy', 'Robustness (1-ASR)', 'F1 Score'],
-                fill='toself',
-                name='Clear Data',
-                line_color='#2ECC71',
-                fillcolor='rgba(46, 204, 113, 0.2)'
-            ))
-        
-        # Process other attacks
-        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
-        color_idx = 0
-        
-        for attack, metrics in attack_metrics.items():
-            if attack != 'no_attack':
-                avg_acc = sum(metrics['acc']) / len(metrics['acc'])
-                avg_asr = sum(metrics['asr']) / len(metrics['asr'])
-                avg_f1 = sum(metrics['f1']) / len(metrics['f1'])
-                
-                color = colors[color_idx % len(colors)]
-                color_idx += 1
-                
-                fig.add_trace(go.Scatterpolar(
-                    r=[avg_acc, 1-avg_asr, avg_f1],  # Invert ASR for better visualization
-                    theta=['Accuracy', 'Robustness (1-ASR)', 'F1 Score'],
-                    fill='toself',
-                    name=attack,
-                    line_color=color,
-                    fillcolor=f'rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.2)'
-                ))
-        
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 1]
-                )),
-            showlegend=True,
-            title="Attack Methods vs Clear Data Comparison (Radar Chart)"
-        )
-        
-        return fig
-    
-    def _generate_results_tables_section(self):
-        """Generate the results tables section."""
-        tables_html = []
-        
-        # Table 1: Complete results
-        tables_html.append(self._create_complete_results_table())
-        
-        # Table 2: Results grouped by metric
-        tables_html.append(self._create_metrics_grouped_table())
-        
-        # Table 3: Results grouped by attack
-        tables_html.append(self._create_attack_grouped_table())
-        
-        return f"""
-        <div class="section results">
-            <h2 class="section-title">3. Detailed Results Tables</h2>
-            {''.join(tables_html)}
-        </div>
-        """
-    
-    def _create_complete_results_table(self):
-        """Create a complete results table."""
-        table_html = """
-        <h3>Complete Experimental Results</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Attack</th>
-                    <th>Epsilon (ε)</th>
-                    <th>Accuracy</th>
-                    <th>Attack Success Rate</th>
-                    <th>F1 Score</th>
-                </tr>
-            </thead>
-            <tbody>
-        """
-        
-        # First add Clear Data row if it exists
-        clear_data_rows = []
-        attack_rows = []
-        
-        for _, row in self.experiments_df.iterrows():
-            metrics = row['metrics']
-            attack_name = 'Clear Data' if row['attack'] == 'no_attack' else row['attack']
-            row_class = 'clear-data-row' if row['attack'] == 'no_attack' else ''
-            
-            row_html = f"""
-                <tr class="{row_class}">
-                    <td>{attack_name}</td>
-                    <td>{row['eps']}</td>
-                    <td class="metric-highlight">{metrics['acc']:.3f}</td>
-                    <td class="metric-highlight">{metrics['asr']:.3f}</td>
-                    <td class="metric-highlight">{metrics['f1']:.3f}</td>
-                </tr>
-            """
-            
-            if row['attack'] == 'no_attack':
-                clear_data_rows.append(row_html)
+                plt.plot(x, [avg_clean] * len(x), color="#bcd4e6", linestyle="--", label="Clean")
+            legend_needed = True
+
+        plt.title(metric_name)
+        plt.xlabel(var_name)
+        plt.ylabel("value")
+        if can_plot_numeric:
+            plt.xscale("linear")
+        plt.grid(color="#c5d6e6", linestyle="-", linewidth=0.8)  # Darker, more visible grid
+        if legend_needed:
+            plt.legend()
+        plt.tight_layout()
+
+        plot_path = os.path.join(out_dir, f"{metric_name}.png")
+        plt.savefig(plot_path, format="png", dpi=150)
+        plt.close()
+        generated.append(plot_path)
+
+    return generated
+
+
+def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
+    desc = report["desc"]
+    experiments = report["experiments"]
+
+    # Section 1: grouped info, 3 columns
+    model_params = desc.get("model_parameters", {})
+    dataloader_params = desc.get("dataloader_parameters", {})
+
+    s1 = []
+    s1.append('<div class="global-card">')
+    s1.append('<h1>Deep Learning Model Robustness Evaluation Report</h1>')
+    s1.append('<h2 class="section-title">Overview</h2>')
+
+    s1.append('<div class="section-row">')
+    # Model info
+    s1.append('<div class="section-card"><h3 class="section-title">Model information</h3><ul class="pretty-list">')
+    s1.append(f"<li><span class='param-key'>Problem type:</span> {desc.get('problem_type')}</li><hr>")
+    s1.append(f"<li><span class='param-key'>Model:</span> {desc.get('model_name')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Model parameters</span></summary><ul class="param-list">')
+    for line in flatten_param_dict(model_params, 0):
+        indent_level = (len(line) - len(line.lstrip())) // 4
+        style = f"margin-left:{indent_level*18}px;"
+        if ":" in line:
+            k, v = line.split(":", 1)
+            if v.strip() == "":
+                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span></li><hr>')
             else:
-                attack_rows.append(row_html)
-        
-        # Add Clear Data first, then attacks
-        table_html += ''.join(clear_data_rows)
-        table_html += ''.join(attack_rows)
-        
-        table_html += """
-            </tbody>
-        </table>
-        """
-        
-        return table_html
-    
-    def _create_metrics_grouped_table(self):
-        """Create tables grouped by metrics."""
-        metrics_html = "<h3>Results Grouped by Metrics</h3>"
-        
-        for metric_name, metric_key in [('Accuracy', 'acc'), ('Attack Success Rate', 'asr'), ('F1 Score', 'f1')]:
-            metrics_html += f"""
-            <h4>{metric_name}</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Attack</th>
-                        <th>Epsilon (ε)</th>
-                        <th>{metric_name}</th>
-                    </tr>
-                </thead>
-                <tbody>
-            """
-            
-            # Separate Clear Data and attacks
-            clear_data_rows = []
-            attack_rows = []
-            
-            for _, row in self.experiments_df.iterrows():
-                attack_name = 'Clear Data' if row['attack'] == 'no_attack' else row['attack']
-                row_class = 'clear-data-row' if row['attack'] == 'no_attack' else ''
-                
-                row_html = f"""
-                    <tr class="{row_class}">
-                        <td>{attack_name}</td>
-                        <td>{row['eps']}</td>
-                        <td class="metric-highlight">{row['metrics'][metric_key]:.3f}</td>
-                    </tr>
-                """
-                
-                if row['attack'] == 'no_attack':
-                    clear_data_rows.append((row['metrics'][metric_key], row_html))
-                else:
-                    attack_rows.append((row['metrics'][metric_key], row_html))
-            
-            # Sort attack rows by metric value descending
-            attack_rows.sort(key=lambda x: x[0], reverse=True)
-            
-            # Add Clear Data first, then sorted attacks
-            for _, row_html in clear_data_rows:
-                metrics_html += row_html
-            for _, row_html in attack_rows:
-                metrics_html += row_html
-            
-            metrics_html += """
-                </tbody>
-            </table>
-            """
-        
-        return metrics_html
-    
-    def _create_attack_grouped_table(self):
-        """Create tables grouped by attack methods."""
-        attacks_html = "<h3>Results Grouped by Attack Methods</h3>"
-        
-        unique_attacks = self.experiments_df['attack'].unique()
-        
-        # Process Clear Data first if it exists
-        if 'no_attack' in unique_attacks:
-            clear_data = self.experiments_df[self.experiments_df['attack'] == 'no_attack']
-            
-            attacks_html += f"""
-            <h4>CLEAR DATA (Baseline Performance)</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Epsilon (ε)</th>
-                        <th>Accuracy</th>
-                        <th>Attack Success Rate</th>
-                        <th>F1 Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-            """
-            
-            for _, row in clear_data.iterrows():
-                metrics = row['metrics']
-                attacks_html += f"""
-                    <tr class="clear-data-row">
-                        <td>{row['eps']}</td>
-                        <td class="metric-highlight">{metrics['acc']:.3f}</td>
-                        <td class="metric-highlight">{metrics['asr']:.3f}</td>
-                        <td class="metric-highlight">{metrics['f1']:.3f}</td>
-                    </tr>
-                """
-            
-            attacks_html += """
-                </tbody>
-            </table>
-            """
-        
-        # Process other attacks
-        for attack in unique_attacks:
-            if attack != 'no_attack':
-                attack_data = self.experiments_df[self.experiments_df['attack'] == attack]
-                
-                attacks_html += f"""
-                <h4>{attack.upper()}</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Epsilon (ε)</th>
-                            <th>Accuracy</th>
-                            <th>Attack Success Rate</th>
-                            <th>F1 Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                """
-                
-                for _, row in attack_data.iterrows():
-                    metrics = row['metrics']
-                    attacks_html += f"""
-                        <tr>
-                            <td>{row['eps']}</td>
-                            <td class="metric-highlight">{metrics['acc']:.3f}</td>
-                            <td class="metric-highlight">{metrics['asr']:.3f}</td>
-                            <td class="metric-highlight">{metrics['f1']:.3f}</td>
-                        </tr>
-                    """
-                
-                attacks_html += """
-                    </tbody>
-                </table>
-                """
-        
-        return attacks_html
-    
-    def _generate_footer(self):
-        """Generate the report footer."""
-        return """
-        <div class="footer">
-            <p>Report generated by Deep Learning Model Robustness Evaluation Tool</p>
-            <p>For questions or issues, please contact the development team.</p>
-        </div>
-        """
+                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>')
+        else:
+            s1.append(f'<li style="{style}">{line}</li><hr>')
+    s1.append("</ul></details></li></ul></div>")
+
+    # Data info
+    s1.append('<div class="section-card"><h3 class="section-title">Dataloader information</h3><ul class="pretty-list">')
+    s1.append(f"<li><span class='param-key'>Dataset loader:</span> {desc.get('dataset_loader_name')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Dataloader parameters</span></summary><ul class="param-list">')
+    for line in flatten_param_dict(dataloader_params, 0):
+        indent_level = (len(line) - len(line.lstrip())) // 4
+        style = f"margin-left:{indent_level*18}px;"
+        if ":" in line:
+            k, v = line.split(":", 1)
+            if v.strip() == "":
+                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span></li><hr>')
+            else:
+                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>')
+        else:
+            s1.append(f'<li style="{style}">{line}</li><hr>')
+    s1.append("</ul></details></li></ul></div>")
+
+    # Attack info
+    s1.append('<div class="section-card"><h3 class="section-title">Attack information</h3><ul class="pretty-list">')
+    s1.append(f"<li><span class='param-key'>Attack:</span> {experiments.get('attack')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Fixed attack parameters</span></summary><ul class="param-list">')
+    for line in flatten_param_dict(experiments.get("fixed_attack_params", {}), 0):
+        indent_level = (len(line) - len(line.lstrip())) // 4
+        style = f"margin-left:{indent_level*18}px;"
+        if ":" in line:
+            k, v = line.split(":", 1)
+            if v.strip() == "":
+                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span></li><hr>')
+            else:
+                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>')
+        else:
+            s1.append(f'<li style="{style}">{line}</li><hr>')
+    s1.append("</ul></details></li>")
+    s1.append(f"<li><span class='param-key'>Variable attack parameter:</span> {experiments.get('variable_param_name')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Variable attack parameter values</span></summary><div class="param-values">')
+    for v in experiments.get("metrics", {}).keys():
+        val = safe_float(v)
+        if val is not None:
+            s1.append(f'<div class="param-item">{format_value(val)}</div>')
+        else:
+            s1.append(f'<div class="param-item">{v}</div>')
+    s1.append("</div></details></li></ul></div>")
+    s1.append("</div>")
+
+    # Section 2: Metrics table
+    s2 = []
+    s2.append('<h2 class="section-title">Metrics</h2>')
+    s2.append('<div class="section-card section-metrics section-wide">')
+    s2.append(make_tables(report, "."))
+    s2.append("</div>")
+
+    # Section 3: plots, responsive columns
+    s3 = []
+    s3.append('<h2 class="section-title">Plots</h2>')
+    s3.append('<div class="section-card section-plots section-wide"><div class="plots-grid">')
+    for plot_path in plots:
+        metric_name = os.path.splitext(os.path.basename(plot_path))[0]
+        s3.append(f'<div class="plot-img"><img src="{os.path.basename(plot_path)}" alt="{metric_name}" style="max-width:100%; border-radius:12px;"></div>')
+    s3.append("</div></div>")
+    s3.append("</div>")  # close global-card
+
+    # CSS for layout, cards, grid, lists, etc.
+    css = """
+    <style>
+    body { background: #f7f8fa; color: #243b44; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .global-card { background: #fff; border-radius: 32px; box-shadow: 0 4px 32px #0002; padding: 32px; max-width: 1140px; margin: 40px auto; box-sizing: border-box; overflow-x: hidden; }
+    h1 { text-align: center; }
+    .section-title { text-align: left; margin-left: 8px; }
+    .section-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
+    .section-card { background: #fafdff; border-radius: 18px; box-shadow: 0 2px 12px #0001; padding: 24px 18px 18px 18px; flex: 1 1 0; min-width: 300px; max-width: 360px; box-sizing: border-box; }
+    .section-wide { max-width: 100%; width: 100%; margin: 0 auto; box-sizing: border-box; }
+    .section-card h3 { margin-top: 0; }
+    .param-list { margin: 0 0 0 12px; padding: 0; list-style: none; }
+    .param-key { font-weight: 600; color: #2b4f66; }
+    .param-val { color: #4f6d7a; }
+    .pretty-list { margin: 0; padding: 0; list-style: none; }
+    .pretty-list li { padding: 8px 0 8px 0; margin: 0; }
+    .pretty-list hr { border: none; border-top: 1px solid #e6eef5; margin: 0; }
+    .metrics-table { width: 100%; border-collapse: collapse; margin: 0 auto; background: #fafdff; border-radius: 12px; overflow: hidden; box-sizing: border-box; }
+    .metrics-table th, .metrics-table td { border: 1px solid #d9dbe0; padding: 12px 18px; text-align: center; }
+    .metrics-table th { background: #e6eef5; color: #2b4f66; font-weight: 700; }
+    .metrics-table tr:nth-child(even) { background: #f3f6fa; }
+    .metrics-table tr:nth-child(odd) { background: #fafdff; }
+    .section-metrics, .section-plots { margin: 0 auto; max-width: 100%; box-sizing: border-box; }
+    .plots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; justify-items: center; width: 100%; box-sizing: border-box; }
+    .plot-img { background: #ffffff; border-radius: 12px; box-shadow: 0 1px 6px #0001; padding: 18px; display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; }
+    .param-values { margin-left: 18px; }
+    .param-item { padding: 4px 0; color: #4f6d7a; }
+    details { margin-bottom: 8px; }
+    summary { cursor: pointer; font-weight: 600; color: #2b4f66; padding: 4px 0; }
+    @media (max-width: 1200px) {
+        .global-card { max-width: 98vw; }
+        .section-card { max-width: 98vw; }
+        .section-metrics, .section-plots { max-width: 98vw; }
+        .plots-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+        .section-row { flex-direction: column; align-items: center; }
+        .section-card { max-width: 98vw; }
+        .section-metrics, .section-plots { max-width: 98vw; }
+        .plots-grid { grid-template-columns: 1fr; }
+    }
+    </style>
+    """
+
+    html = f'<html><head><meta charset="utf-8"><title>Robustness Report</title>{css}</head><body>'
+    html += "\n".join(s1)
+    html += "\n".join(s2)
+    html += "\n".join(s3)
+    html += "</body></html>"
+    return html
 
 
 def main():
+    import argparse
     """Main function to run the report generator."""
-    parser = argparse.ArgumentParser(description='Generate HTML report from robustness evaluation JSON data')
-    parser.add_argument('input_file', help='Path to input JSON file')
-    parser.add_argument('-o', '--output', default='robustness_report.html', help='Output HTML file path')
+    parser = argparse.ArgumentParser(description="Generate HTML report from robustness evaluation JSON data")
+    parser.add_argument("-i", "--input", default="report_dict.json", help="Path to input JSON file")
+    parser.add_argument("-o", "--output", default="robustness_report.html", help="Output HTML file path")
     
     args = parser.parse_args()
-    
-    # Load JSON data
-    try:
-        with open(args.input_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: File {args.input_file} not found.")
+
+    report = read_report(args.input)
+    if report is None:
         return
-    except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in {args.input_file}: {e}")
-        return
-    
-    # Generate report
-    generator = RobustnessReportGenerator(data)
-    output_file = generator.generate_html_report(args.output)
-    
-    print(f"\n🎉 Report successfully generated!")
-    print(f"📄 Output file: {output_file}")
-    print(f"🌐 Open in browser: file://{Path(output_file).absolute()}")
-    print(f"📋 To export to PDF: Open in browser and use Print > Save as PDF")
+
+    # generate plots
+    plots = plot_metrics(report, ".")
+
+    # build html (images referenced by basename)
+    html = build_report_html(report, plots)
+
+    with open(args.output, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    print(f"Report generated: {args.output}")
+    for p in plots:
+        print(f"Plot: {p}")
 
 
 if __name__ == "__main__":
