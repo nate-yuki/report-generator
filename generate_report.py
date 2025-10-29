@@ -84,9 +84,9 @@ def make_tables(report: Dict[str, Any], _out_dir: str = ".") -> str:
     sample = next(iter(metrics.values()))
     metric_keys = list(sample.keys())
 
-    # Move "user" metrics to the end
-    user_metrics = [k for k in metric_keys if "user" in k.lower()]
-    non_user_metrics = [k for k in metric_keys if "user" not in k.lower()]
+    # Move user metrics to the end
+    user_metrics = [k for k in metric_keys if not k.endswith("_")]
+    non_user_metrics = [k for k in metric_keys if k.endswith("_")]
 
     # Build mapping: for each X, if Clean X (case-insensitive) exists, place after X
     used = set()
@@ -150,9 +150,9 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
     sample = next(iter(metrics.values()))
     metric_keys = list(sample.keys())
 
-    # Move "user" metrics to the end
-    user_metrics = [k for k in metric_keys if "user" in k.lower()]
-    non_user_metrics = [k for k in metric_keys if "user" not in k.lower()]
+    # Move user metrics to the end
+    user_metrics = [k for k in metric_keys if not k.endswith("_")]
+    non_user_metrics = [k for k in metric_keys if k.endswith("_")]
 
     # detect Clean {X} patterns (case-insensitive)
     clean_map = {}
