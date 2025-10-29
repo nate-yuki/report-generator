@@ -312,7 +312,7 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
     s3.append('<div class="section-card section-plots section-wide"><div class="plots-grid">')
     for plot_path in plots:
         metric_name = os.path.splitext(os.path.basename(plot_path))[0]
-        s3.append(f'<div class="plot-img"><img src="{os.path.basename(plot_path)}" alt="{metric_name}" style="max-width:100%; border-radius:12px;"></div>')
+        s3.append(f'<div class="plot-img"><img src="{plot_path}" alt="{metric_name}" style="max-width:100%; border-radius:12px;"></div>')
     s3.append("</div></div>")
     s3.append("</div>")  # close global-card
 
@@ -374,17 +374,21 @@ def main():
     parser = argparse.ArgumentParser(description="Generate HTML report from robustness evaluation JSON data")
     parser.add_argument("-i", "--input", default="report_dict.json", help="Path to input JSON file")
     parser.add_argument("-o", "--output", default="robustness_report.html", help="Output HTML file path")
+    parser.add_argument("-p", "--plots-path", default=".", help="Path to output plots directory")
     
     args = parser.parse_args()
 
     report = read_report(args.input)
     if report is None:
         return
+    
+    if not os.path.exists(args.plots_path):
+        os.mkdir(args.plots_path)
 
     # generate plots
-    plots = plot_metrics(report, ".")
+    plots = plot_metrics(report, args.plots_path)
 
-    # build html (images referenced by basename)
+    # build html
     html = build_report_html(report, plots)
 
     with open(args.output, "w", encoding="utf-8") as f:
