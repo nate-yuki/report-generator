@@ -17,7 +17,7 @@ PALETTE = {
 
 
 def read_report(path: str) -> Dict[str, Any]:
-    # Load JSON data
+    """ Load report dictionary from JSON file at path. """
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -133,6 +133,7 @@ def make_tables(report: Dict[str, Any], _out_dir: str = ".") -> str:
 
 
 def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
+    """ Plot metrics from report and store plots in out_dir. """
     experiments = report["experiments"]
     var_name = experiments["variable_param_name"]
     metrics = ensure_metric_floats(experiments["metrics"])
@@ -175,7 +176,7 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
     for metric_name in to_plot_bases:
         ys = [metrics[p].get(metric_name, float("nan")) for p in raw_x]
 
-        plt.figure(figsize=(18.72 / 1.5, 12.48 / 1.5))  # 30% larger than before
+        plt.figure(figsize=(18.72 / 1.5, 12.48 / 1.5))
         plt.rcParams.update({
             "font.size": 26,
             "axes.labelsize": 26,
@@ -208,7 +209,7 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
         plt.ylabel("value")
         if can_plot_numeric:
             plt.xscale("linear")
-        plt.grid(color="#c5d6e6", linestyle="-", linewidth=0.8)  # Darker, more visible grid
+        plt.grid(color="#c5d6e6", linestyle="-", linewidth=0.8)
         if legend_needed:
             plt.legend()
         plt.tight_layout()
@@ -222,6 +223,7 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
 
 
 def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
+    """ Build HTML report string from the given report dictionary and list of plot paths. """
     desc = report["desc"]
     experiments = report["experiments"]
 
@@ -367,8 +369,8 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
 
 
 def main():
-    import argparse
     """Main function to run the report generator."""
+    import argparse
     parser = argparse.ArgumentParser(description="Generate HTML report from robustness evaluation JSON data")
     parser.add_argument("-i", "--input", default="report_dict.json", help="Path to input JSON file")
     parser.add_argument("-o", "--output", default="robustness_report.html", help="Output HTML file path")

@@ -33,7 +33,7 @@ pip install -r requirements.txt
 python generate_report.py
 ```
 
-### Custom Output File
+### Custom Input/Output Files
 ```bash
 python generate_report.py -i input_file.json -o my_report.html
 ```
