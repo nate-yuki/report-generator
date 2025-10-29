@@ -188,7 +188,7 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
             "lines.markersize": 20,
             "axes.titlepad": 20,  # Increase space between title and plot
         })
-        plt.plot(x, ys, marker="o", color="#5a8bb0", label="Attacked")
+        plt.plot(x, ys, marker="o" if len(x) < 7 else None, color="#5a8bb0", label="Attacked")
 
         clean_key = clean_map.get(metric_name.lower())
         legend_needed = False
