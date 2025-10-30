@@ -16,8 +16,8 @@ PALETTE = {
 }
 
 
-def read_report(path: str) -> Dict[str, Any]:
-    """ Load report dictionary from JSON file at path. """
+def read_json(path: str) -> Dict[str, Any]:
+    """ Load dictionary from JSON file at path. """
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -53,7 +53,7 @@ def flatten_param_dict(d: Dict[str, Any], indent: int = 0) -> List[str]:
     for k, v in d.items():
         if isinstance(v, dict):
             if not v:  # Empty dict
-                out.append(f"{pad}{k}: default")
+                out.append(f"{pad}{k}: по умолчанию")
             else:
                 out.append(f"{pad}{k}:")
                 for ik, iv in v.items():
@@ -63,7 +63,7 @@ def flatten_param_dict(d: Dict[str, Any], indent: int = 0) -> List[str]:
             if isinstance(v, (int, float)):
                 out.append(f"{pad}{k}: {format_value(v)}")
             else:
-                out.append(f"{pad}{k}: {v if v else 'default'}")
+                out.append(f"{pad}{k}: {v if v else 'по умолчанию'}")
     return out
 
 
@@ -222,7 +222,7 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
     return generated
 
 
-def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
+def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: Dict[str, str]) -> str:
     """ Build HTML report string from the given report dictionary and list of plot paths. """
     desc = report["desc"]
     experiments = report["experiments"]
@@ -233,15 +233,17 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
 
     s1 = []
     s1.append('<div class="global-card">')
-    s1.append('<h1>Deep Learning Model Robustness Evaluation Report</h1>')
-    s1.append('<h2 class="section-title">Overview</h2>')
+    s1.append(f"<h1>Отчет устойчивости {desc.get('model_name')} к атаке {experiments.get('attack')}</h1>")
+    s1.append('<h2 class="section-title">Обзор</h2>')
 
     s1.append('<div class="section-row">')
     # Model info
-    s1.append('<div class="section-card"><h3 class="section-title">Model information</h3><ul class="pretty-list">')
-    s1.append(f"<li><span class='param-key'>Problem type:</span> {desc.get('problem_type')}</li><hr>")
-    s1.append(f"<li><span class='param-key'>Model:</span> {desc.get('model_name')}</li><hr>")
-    s1.append('<li><details><summary><span class="param-key">Model parameters</span></summary><ul class="param-list">')
+    s1.append('<div class="section-card"><h3 class="section-title">Атакуемая модель</h3><ul class="pretty-list">')
+    problem_type = desc.get('problem_type')
+    problem_type_ru = problem_types[problem_type]
+    s1.append(f"<li><span class='param-key'>Задача:</span> {problem_type_ru} ({problem_type})</li><hr>")
+    s1.append(f"<li><span class='param-key'>Модель:</span> {desc.get('model_name')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Параметры</span></summary><ul class="param-list">')
     for line in flatten_param_dict(model_params, 0):
         indent_level = (len(line) - len(line.lstrip())) // 4
         style = f"margin-left:{indent_level*18}px;"
@@ -256,9 +258,9 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
     s1.append("</ul></details></li></ul></div>")
 
     # Data info
-    s1.append('<div class="section-card"><h3 class="section-title">Dataloader information</h3><ul class="pretty-list">')
-    s1.append(f"<li><span class='param-key'>Dataset loader:</span> {desc.get('dataset_loader_name')}</li><hr>")
-    s1.append('<li><details><summary><span class="param-key">Dataloader parameters</span></summary><ul class="param-list">')
+    s1.append('<div class="section-card"><h3 class="section-title">Данные</h3><ul class="pretty-list">')
+    s1.append(f"<li><span class='param-key'>Загрузчик данных:</span> {desc.get('dataset_loader_name')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Параметры загрузчика данных</span></summary><ul class="param-list">')
     for line in flatten_param_dict(dataloader_params, 0):
         indent_level = (len(line) - len(line.lstrip())) // 4
         style = f"margin-left:{indent_level*18}px;"
@@ -273,9 +275,9 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
     s1.append("</ul></details></li></ul></div>")
 
     # Attack info
-    s1.append('<div class="section-card"><h3 class="section-title">Attack information</h3><ul class="pretty-list">')
-    s1.append(f"<li><span class='param-key'>Attack:</span> {experiments.get('attack')}</li><hr>")
-    s1.append('<li><details><summary><span class="param-key">Fixed attack parameters</span></summary><ul class="param-list">')
+    s1.append('<div class="section-card"><h3 class="section-title">Информация об атаке</h3><ul class="pretty-list">')
+    s1.append(f"<li><span class='param-key'>Атака:</span> {experiments.get('attack')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Зафиксированные параметры</span></summary><ul class="param-list">')
     for line in flatten_param_dict(experiments.get("fixed_attack_params", {}), 0):
         indent_level = (len(line) - len(line.lstrip())) // 4
         style = f"margin-left:{indent_level*18}px;"
@@ -288,8 +290,8 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
         else:
             s1.append(f'<li style="{style}">{line}</li><hr>')
     s1.append("</ul></details></li>")
-    s1.append(f"<li><span class='param-key'>Variable attack parameter:</span> {experiments.get('variable_param_name')}</li><hr>")
-    s1.append('<li><details><summary><span class="param-key">Variable attack parameter values</span></summary><div class="param-values">')
+    s1.append(f"<li><span class='param-key'>Переменный параметр:</span> {experiments.get('variable_param_name')}</li><hr>")
+    s1.append('<li><details><summary><span class="param-key">Значения переменного параметра</span></summary><div class="param-values">')
     for v in experiments.get("metrics", {}).keys():
         val = safe_float(v)
         if val is not None:
@@ -301,14 +303,14 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
 
     # Section 2: Metrics table
     s2 = []
-    s2.append('<h2 class="section-title">Metrics</h2>')
+    s2.append('<h2 class="section-title">Метрики</h2>')
     s2.append('<div class="section-card section-metrics section-wide">')
     s2.append(make_tables(report, "."))
     s2.append("</div>")
 
     # Section 3: plots, responsive columns
     s3 = []
-    s3.append('<h2 class="section-title">Plots</h2>')
+    s3.append('<h2 class="section-title">Графики</h2>')
     s3.append('<div class="section-card section-plots section-wide"><div class="plots-grid">')
     for plot_path in plots:
         metric_name = os.path.splitext(os.path.basename(plot_path))[0]
@@ -360,7 +362,7 @@ def build_report_html(report: Dict[str, Any], plots: List[str]) -> str:
     </style>
     """
 
-    html = f'<html><head><meta charset="utf-8"><title>Robustness Report</title>{css}</head><body>'
+    html = f'<html><head><meta charset="utf-8"><title>Отчет устойчивости</title>{css}</head><body>'
     html += "\n".join(s1)
     html += "\n".join(s2)
     html += "\n".join(s3)
@@ -375,11 +377,16 @@ def main():
     parser.add_argument("-i", "--input", default="report_dict.json", help="Path to input JSON file")
     parser.add_argument("-o", "--output", default="robustness_report.html", help="Output HTML file path")
     parser.add_argument("-p", "--plots-path", default=".", help="Path to output plots directory")
+    parser.add_argument("-PTp", "--problem-types-path", default="./problem_types.json", help="Path to problem types translation directory")
     
     args = parser.parse_args()
 
-    report = read_report(args.input)
+    report = read_json(args.input)
     if report is None:
+        return
+
+    problem_types = read_json(args.problem_types_path)
+    if problem_types is None:
         return
     
     if not os.path.exists(args.plots_path):
@@ -389,7 +396,7 @@ def main():
     plots = plot_metrics(report, args.plots_path)
 
     # build html
-    html = build_report_html(report, plots)
+    html = build_report_html(report, plots, problem_types)
 
     with open(args.output, "w", encoding="utf-8") as f:
         f.write(html)

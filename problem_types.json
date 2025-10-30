@@ -1,0 +1,8 @@
+{
+    "Image classification": "Классификация изображений",
+    "Image segmentation": "Сегментация",
+    "Image detection": "Детекция",
+    "Table classification": "Классификация таблиц",
+    "Table regression": "Регрессия таблиц",
+    "Time series classification": "Классификация временных рядов"
+}

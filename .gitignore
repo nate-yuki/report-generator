@@ -3,3 +3,4 @@
 *.png
 !examples/*
 drafts/
+!problem_types.json
