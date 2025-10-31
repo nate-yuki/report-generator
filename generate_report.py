@@ -395,6 +395,10 @@ def main():
     # generate plots
     plots = plot_metrics(report, args.plots_path)
 
+    # make plot paths relative
+    for idx in range(len(plots)):
+        plots[idx] = os.path.relpath(plots[idx], start=os.path.dirname(args.output))
+        
     # build html
     html = build_report_html(report, plots, problem_types)
 
