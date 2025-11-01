@@ -1,12 +1,12 @@
 import json
 import os
 from collections import OrderedDict
-from typing import Any, Dict, List, Tuple
+from pathlib import Path
+from typing import Any
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 
 PALETTE = {
     "dark_blue": "#2b4f66",
@@ -16,10 +16,10 @@ PALETTE = {
 }
 
 
-def read_json(path: str) -> Dict[str, Any]:
-    """ Load dictionary from JSON file at path. """
+def read_json(path: str) -> dict[str, Any]:
+    """Load dictionary from JSON file at path."""
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Error: File {path} not found.")
@@ -44,10 +44,12 @@ def format_value(v: Any) -> str:
     return str(v)
 
 
-def flatten_param_dict(d: Dict[str, Any], indent: int = 0) -> List[str]:
+def flatten_param_dict(d: dict[str, Any], indent: int = 0) -> list[str]:
     """Flatten the 1-level dict where values are dicts possibly empty.
+
     Replace empty dicts with the string 'default'.
-    For nested dicts, print sub-items on new lines with indentation."""
+    For nested dicts, print sub-items on new lines with indentation.
+    """
     out = []
     pad = "    " * indent
     for k, v in d.items():
@@ -67,14 +69,14 @@ def flatten_param_dict(d: Dict[str, Any], indent: int = 0) -> List[str]:
     return out
 
 
-def ensure_metric_floats(metrics: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
+def ensure_metric_floats(metrics: dict[str, dict[str, Any]]) -> dict[str, dict[str, float]]:
     out = OrderedDict()
     for param, m in metrics.items():
         out[param] = {k: float(v) for k, v in m.items()}
     return out
 
 
-def make_tables(report: Dict[str, Any], _out_dir: str = ".") -> str:
+def make_tables(report: dict[str, Any]) -> str:
     """Return HTML for the single metrics table, with Clean X after X (case-insensitive)."""
     experiments = report["experiments"]
     var_name = experiments["variable_param_name"]
@@ -132,8 +134,8 @@ def make_tables(report: Dict[str, Any], _out_dir: str = ".") -> str:
     return "\n".join(html)
 
 
-def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
-    """ Plot metrics from report and store plots in out_dir. """
+def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
+    """Plot metrics from report and store plots in out_dir."""
     experiments = report["experiments"]
     var_name = experiments["variable_param_name"]
     metrics = ensure_metric_floats(experiments["metrics"])
@@ -177,17 +179,19 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
         ys = [metrics[p].get(metric_name, float("nan")) for p in raw_x]
 
         plt.figure(figsize=(18.72 / 1.5, 12.48 / 1.5))
-        plt.rcParams.update({
-            "font.size": 26,
-            "axes.labelsize": 26,
-            "axes.titlesize": 28,
-            "xtick.labelsize": 24,
-            "ytick.labelsize": 24,
-            "legend.fontsize": 24,
-            "lines.linewidth": 5,
-            "lines.markersize": 20,
-            "axes.titlepad": 20,  # Increase space between title and plot
-        })
+        plt.rcParams.update(
+            {
+                "font.size": 26,
+                "axes.labelsize": 26,
+                "axes.titlesize": 28,
+                "xtick.labelsize": 24,
+                "ytick.labelsize": 24,
+                "legend.fontsize": 24,
+                "lines.linewidth": 5,
+                "lines.markersize": 20,
+                "axes.titlepad": 20,  # Increase space between title and plot
+            }
+        )
         plt.plot(x, ys, marker="o" if len(x) < 7 else None, color="#5a8bb0", label="Attacked")
 
         clean_key = clean_map.get(metric_name.lower())
@@ -206,7 +210,7 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
 
         plt.title(metric_name)
         plt.xlabel(var_name)
-        plt.ylabel("value")
+        plt.ylabel("значение")
         if can_plot_numeric:
             plt.xscale("linear")
         plt.grid(color="#c5d6e6", linestyle="-", linewidth=0.8)
@@ -222,8 +226,8 @@ def plot_metrics(report: Dict[str, Any], out_dir: str) -> List[str]:
     return generated
 
 
-def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: Dict[str, str]) -> str:
-    """ Build HTML report string from the given report dictionary and list of plot paths. """
+def build_report_html(report: dict[str, Any], plots: list[str], problem_types: dict[str, str]) -> str:
+    """Build HTML report string from the given report dictionary and list of plot paths."""
     desc = report["desc"]
     experiments = report["experiments"]
 
@@ -239,7 +243,7 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
     s1.append('<div class="section-row">')
     # Model info
     s1.append('<div class="section-card"><h3 class="section-title">Атакуемая модель</h3><ul class="pretty-list">')
-    problem_type = desc.get('problem_type')
+    problem_type = desc.get("problem_type")
     problem_type_ru = problem_types[problem_type]
     s1.append(f"<li><span class='param-key'>Задача:</span> {problem_type_ru} ({problem_type})</li><hr>")
     s1.append(f"<li><span class='param-key'>Модель:</span> {desc.get('model_name')}</li><hr>")
@@ -252,7 +256,9 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
             if v.strip() == "":
                 s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span></li><hr>')
             else:
-                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>')
+                s1.append(
+                    f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>'
+                )
         else:
             s1.append(f'<li style="{style}">{line}</li><hr>')
     s1.append("</ul></details></li></ul></div>")
@@ -260,7 +266,9 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
     # Data info
     s1.append('<div class="section-card"><h3 class="section-title">Данные</h3><ul class="pretty-list">')
     s1.append(f"<li><span class='param-key'>Загрузчик данных:</span> {desc.get('dataset_loader_name')}</li><hr>")
-    s1.append('<li><details><summary><span class="param-key">Параметры загрузчика данных</span></summary><ul class="param-list">')
+    s1.append(
+        '<li><details><summary><span class="param-key">Параметры загрузчика данных</span></summary><ul class="param-list">'
+    )
     for line in flatten_param_dict(dataloader_params, 0):
         indent_level = (len(line) - len(line.lstrip())) // 4
         style = f"margin-left:{indent_level*18}px;"
@@ -269,7 +277,9 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
             if v.strip() == "":
                 s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span></li><hr>')
             else:
-                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>')
+                s1.append(
+                    f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>'
+                )
         else:
             s1.append(f'<li style="{style}">{line}</li><hr>')
     s1.append("</ul></details></li></ul></div>")
@@ -277,7 +287,9 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
     # Attack info
     s1.append('<div class="section-card"><h3 class="section-title">Информация об атаке</h3><ul class="pretty-list">')
     s1.append(f"<li><span class='param-key'>Атака:</span> {experiments.get('attack')}</li><hr>")
-    s1.append('<li><details><summary><span class="param-key">Зафиксированные параметры</span></summary><ul class="param-list">')
+    s1.append(
+        '<li><details><summary><span class="param-key">Зафиксированные параметры</span></summary><ul class="param-list">'
+    )
     for line in flatten_param_dict(experiments.get("fixed_attack_params", {}), 0):
         indent_level = (len(line) - len(line.lstrip())) // 4
         style = f"margin-left:{indent_level*18}px;"
@@ -286,12 +298,18 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
             if v.strip() == "":
                 s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span></li><hr>')
             else:
-                s1.append(f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>')
+                s1.append(
+                    f'<li style="{style}"><span class="param-key">{k.strip()}:</span> <span class="param-val">{v.strip()}</span></li><hr>'
+                )
         else:
             s1.append(f'<li style="{style}">{line}</li><hr>')
     s1.append("</ul></details></li>")
-    s1.append(f"<li><span class='param-key'>Переменный параметр:</span> {experiments.get('variable_param_name')}</li><hr>")
-    s1.append('<li><details><summary><span class="param-key">Значения переменного параметра</span></summary><div class="param-values">')
+    s1.append(
+        f"<li><span class='param-key'>Переменный параметр:</span> {experiments.get('variable_param_name')}</li><hr>"
+    )
+    s1.append(
+        '<li><details><summary><span class="param-key">Значения переменного параметра</span></summary><div class="param-values">'
+    )
     for v in experiments.get("metrics", {}).keys():
         val = safe_float(v)
         if val is not None:
@@ -305,7 +323,7 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
     s2 = []
     s2.append('<h2 class="section-title">Метрики</h2>')
     s2.append('<div class="section-card section-metrics section-wide">')
-    s2.append(make_tables(report, "."))
+    s2.append(make_tables(report))
     s2.append("</div>")
 
     # Section 3: plots, responsive columns
@@ -314,7 +332,9 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
     s3.append('<div class="section-card section-plots section-wide"><div class="plots-grid">')
     for plot_path in plots:
         metric_name = os.path.splitext(os.path.basename(plot_path))[0]
-        s3.append(f'<div class="plot-img"><img src="{plot_path}" alt="{metric_name}" style="max-width:100%; border-radius:12px;"></div>')
+        s3.append(
+            f'<div class="plot-img"><img src="{plot_path}" alt="{metric_name}" style="max-width:100%; border-radius:12px;"></div>'
+        )
     s3.append("</div></div>")
     s3.append("</div>")  # close global-card
 
@@ -373,12 +393,18 @@ def build_report_html(report: Dict[str, Any], plots: List[str], problem_types: D
 def main():
     """Main function to run the report generator."""
     import argparse
+
     parser = argparse.ArgumentParser(description="Generate HTML report from robustness evaluation JSON data")
     parser.add_argument("-i", "--input", default="report_dict.json", help="Path to input JSON file")
     parser.add_argument("-o", "--output", default="robustness_report.html", help="Output HTML file path")
     parser.add_argument("-p", "--plots-path", default=".", help="Path to output plots directory")
-    parser.add_argument("-PTp", "--problem-types-path", default="./problem_types.json", help="Path to problem types translation directory")
-    
+    parser.add_argument(
+        "-PTp",
+        "--problem-types-path",
+        default="./problem_types.json",
+        help="Path to problem types JSON file",
+    )
+
     args = parser.parse_args()
 
     report = read_json(args.input)
@@ -388,7 +414,7 @@ def main():
     problem_types = read_json(args.problem_types_path)
     if problem_types is None:
         return
-    
+
     if not os.path.exists(args.plots_path):
         os.mkdir(args.plots_path)
 
@@ -398,7 +424,7 @@ def main():
     # make plot paths relative
     for idx in range(len(plots)):
         plots[idx] = os.path.relpath(plots[idx], start=os.path.dirname(args.output))
-        
+
     # build html
     html = build_report_html(report, plots, problem_types)
 
