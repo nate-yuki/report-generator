@@ -1,4 +1,4 @@
-<html><head><meta charset="utf-8"><title>Robustness Report</title>
+<html><head><meta charset="utf-8"><title>Отчет устойчивости</title>
     <style>
     body { background: #f7f8fa; color: #243b44; font-family: Arial, sans-serif; margin: 0; padding: 0; }
     .global-card { background: #fff; border-radius: 32px; box-shadow: 0 4px 32px #0002; padding: 32px; max-width: 1140px; margin: 40px auto; box-sizing: border-box; overflow-x: hidden; }
@@ -40,62 +40,67 @@
     }
     </style>
     </head><body><div class="global-card">
-<h1>Deep Learning Model Robustness Evaluation Report</h1>
-<h2 class="section-title">Overview</h2>
+<h1>Отчет устойчивости resnet18 к атаке pgd</h1>
+<h2 class="section-title">Обзор</h2>
 <div class="section-row">
-<div class="section-card"><h3 class="section-title">Model information</h3><ul class="pretty-list">
-<li><span class='param-key'>Problem type:</span> Table Classification</li><hr>
-<li><span class='param-key'>Model:</span> mlp</li><hr>
-<li><details><summary><span class="param-key">Model parameters</span></summary><ul class="param-list">
+<div class="section-card"><h3 class="section-title">Атакуемая модель</h3><ul class="pretty-list">
+<li><span class='param-key'>Задача:</span> Классификация изображений (Image classification)</li><hr>
+<li><span class='param-key'>Модель:</span> resnet18</li><hr>
+<li><details><summary><span class="param-key">Параметры</span></summary><ul class="param-list">
 <li style="margin-left:0px;"><span class="param-key">__init__:</span></li><hr>
-<li style="margin-left:18px;"><span class="param-key">input_shape:</span> <span class="param-val">4</span></li><hr>
-<li style="margin-left:18px;"><span class="param-key">num_classes:</span> <span class="param-val">3</span></li><hr>
+<li style="margin-left:18px;"><span class="param-key">input_shape:</span> <span class="param-val">[3, 32, 32]</span></li><hr>
+<li style="margin-left:18px;"><span class="param-key">num_classes:</span> <span class="param-val">10</span></li><hr>
 <li style="margin-left:18px;"><span class="param-key">weights_path:</span> <span class="param-val">weights.pth</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">compute_metrics:</span> <span class="param-val">default</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">reset_metrics:</span> <span class="param-val">default</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">update_metrics:</span> <span class="param-val">default</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">compute_metrics:</span> <span class="param-val">по умолчанию</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">reset_metrics:</span> <span class="param-val">по умолчанию</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">update_metrics:</span> <span class="param-val">по умолчанию</span></li><hr>
 <li style="margin-left:0px;"><span class="param-key">train_function:</span></li><hr>
 <li style="margin-left:18px;"><span class="param-key">lr:</span> <span class="param-val">0.00100</span></li><hr>
+<li style="margin-left:18px;"><span class="param-key">momentum:</span> <span class="param-val">0.90000</span></li><hr>
 <li style="margin-left:18px;"><span class="param-key">num_epochs:</span> <span class="param-val">5</span></li><hr>
 <li style="margin-left:18px;"><span class="param-key">save_model_weigths:</span> <span class="param-val">weights.pth</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">get_grad:</span> <span class="param-val">default</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">predict_function:</span> <span class="param-val">default</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">get_grad:</span> <span class="param-val">по умолчанию</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">predict_function:</span> <span class="param-val">по умолчанию</span></li><hr>
 </ul></details></li></ul></div>
-<div class="section-card"><h3 class="section-title">Dataloader information</h3><ul class="pretty-list">
-<li><span class='param-key'>Dataset loader:</span> iris</li><hr>
-<li><details><summary><span class="param-key">Dataloader parameters</span></summary><ul class="param-list">
-<li style="margin-left:0px;"><span class="param-key">__init__:</span> <span class="param-val">default</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">get_dataset:</span> <span class="param-val">default</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">get_test_data:</span> <span class="param-val">default</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">get_train_data:</span> <span class="param-val">default</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">get_validation_data:</span> <span class="param-val">default</span></li><hr>
+<div class="section-card"><h3 class="section-title">Данные</h3><ul class="pretty-list">
+<li><span class='param-key'>Загрузчик данных:</span> cifar10</li><hr>
+<li><details><summary><span class="param-key">Параметры загрузчика данных</span></summary><ul class="param-list">
+<li style="margin-left:0px;"><span class="param-key">__init__:</span> <span class="param-val">по умолчанию</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">get_dataset:</span> <span class="param-val">по умолчанию</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">get_test_data:</span> <span class="param-val">по умолчанию</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">get_train_data:</span> <span class="param-val">по умолчанию</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">get_validation_data:</span> <span class="param-val">по умолчанию</span></li><hr>
 </ul></details></li></ul></div>
-<div class="section-card"><h3 class="section-title">Attack information</h3><ul class="pretty-list">
-<li><span class='param-key'>Attack:</span> pgd</li><hr>
-<li><details><summary><span class="param-key">Fixed attack parameters</span></summary><ul class="param-list">
-<li style="margin-left:0px;"><span class="param-key">eps_step:</span> <span class="param-val">0.03922</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">clip_min:</span> <span class="param-val">-100</span></li><hr>
-<li style="margin-left:0px;"><span class="param-key">clip_max:</span> <span class="param-val">100</span></li><hr>
+<div class="section-card"><h3 class="section-title">Информация об атаке</h3><ul class="pretty-list">
+<li><span class='param-key'>Атака:</span> pgd</li><hr>
+<li><details><summary><span class="param-key">Зафиксированные параметры</span></summary><ul class="param-list">
+<li style="margin-left:0px;"><span class="param-key">eps_step:</span> <span class="param-val">0.00392</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">max_iter:</span> <span class="param-val">10</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">norm:</span> <span class="param-val">inf</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">targeted:</span> <span class="param-val">False</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">test_on_num_examples:</span> <span class="param-val">50</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">clip_min:</span> <span class="param-val">0.00000</span></li><hr>
+<li style="margin-left:0px;"><span class="param-key">clip_max:</span> <span class="param-val">1.00000</span></li><hr>
 </ul></details></li>
-<li><span class='param-key'>Variable attack parameter:</span> eps</li><hr>
-<li><details><summary><span class="param-key">Variable attack parameter values</span></summary><div class="param-values">
-<div class="param-item">0.07843</div>
-<div class="param-item">0.19608</div>
-<div class="param-item">0.58824</div>
+<li><span class='param-key'>Переменный параметр:</span> eps</li><hr>
+<li><details><summary><span class="param-key">Значения переменного параметра</span></summary><div class="param-values">
+<div class="param-item">0.00392</div>
+<div class="param-item">0.01961</div>
+<div class="param-item">0.05882</div>
 </div></details></li></ul></div>
-</div><h2 class="section-title">Metrics</h2>
+</div><h2 class="section-title">Метрики</h2>
 <div class="section-card section-metrics section-wide">
 <table class="metrics-table">
-<tr><th>eps</th><th>Accuracy</th><th>Clean accuracy</th><th>ASR</th><th>MAE</th><th>Accuracy_user</th></tr>
-<tr><td>0.07843</td><td>0.83333</td><td>0.86667</td><td>0.03846</td><td>0.07843</td><td>83.33333</td></tr>
-<tr><td>0.19608</td><td>0.83333</td><td>0.86667</td><td>0.03846</td><td>0.19608</td><td>83.33333</td></tr>
-<tr><td>0.58824</td><td>0.63333</td><td>0.86667</td><td>0.26923</td><td>0.39216</td><td>63.33333</td></tr>
+<tr><th>eps</th><th>Accuracy_</th><th>Clean_Accuracy_</th><th>ASR_</th><th>MAE_</th><th>Accuracy_user</th></tr>
+<tr><td>0.00392</td><td>32.81250</td><td>79.68750</td><td>58.82353</td><td>0.00328</td><td>32.81250</td></tr>
+<tr><td>0.01961</td><td>0.00000</td><td>79.68750</td><td>100.00000</td><td>0.01292</td><td>0.00000</td></tr>
+<tr><td>0.05882</td><td>0.00000</td><td>79.68750</td><td>100.00000</td><td>0.01599</td><td>0.00000</td></tr>
 </table>
-</div><h2 class="section-title">Plots</h2>
+</div><h2 class="section-title">Графики</h2>
 <div class="section-card section-plots section-wide"><div class="plots-grid">
-<div class="plot-img"><img src="Accuracy.png" alt="Accuracy" style="max-width:100%; border-radius:12px;"></div>
-<div class="plot-img"><img src="ASR.png" alt="ASR" style="max-width:100%; border-radius:12px;"></div>
-<div class="plot-img"><img src="MAE.png" alt="MAE" style="max-width:100%; border-radius:12px;"></div>
+<div class="plot-img"><img src="Accuracy_.png" alt="Accuracy_" style="max-width:100%; border-radius:12px;"></div>
+<div class="plot-img"><img src="ASR_.png" alt="ASR_" style="max-width:100%; border-radius:12px;"></div>
+<div class="plot-img"><img src="MAE_.png" alt="MAE_" style="max-width:100%; border-radius:12px;"></div>
 <div class="plot-img"><img src="Accuracy_user.png" alt="Accuracy_user" style="max-width:100%; border-radius:12px;"></div>
 </div></div>
 </div></body></html>

@@ -1,11 +1,15 @@
 {
     "desc": {
-        "problem_type": "Table Classification",
-        "model_name": "mlp",
+        "problem_type": "Image classification",
+        "model_name": "resnet18",
         "model_parameters": {
             "__init__": {
-                "input_shape": 4,
-                "num_classes": 3,
+                "input_shape": [
+                    3,
+                    32,
+                    32
+                ],
+                "num_classes": 10,
                 "weights_path": "weights.pth"
             },
             "compute_metrics": {},
@@ -13,13 +17,14 @@
             "update_metrics": {},
             "train_function": {
                 "lr": 0.001,
+                "momentum": 0.9,
                 "num_epochs": 5,
                 "save_model_weigths": "weights.pth"
             },
             "get_grad": {},
             "predict_function": {}
         },
-        "dataset_loader_name": "iris",
+        "dataset_loader_name": "cifar10",
         "dataloader_parameters": {
             "__init__": {},
             "get_dataset": {},
@@ -32,31 +37,35 @@
         "attack": "pgd",
         "variable_param_name": "eps",
         "fixed_attack_params": {
-            "eps_step": 0.0392156862745098,
-            "clip_min": -100,
-            "clip_max": 100
+            "eps_step": 0.00392156862745098,
+            "max_iter": 10,
+            "norm": "inf",
+            "targeted": false,
+            "test_on_num_examples": 50,
+            "clip_min": 0.0,
+            "clip_max": 1.0
         },
         "metrics": {
-            "0.0784313725490196": {
-                "Accuracy": 0.8333333333333334,
-                "Accuracy_user": 83.33333333333334,
-                "ASR": 0.038461538461538464,
-                "Clean accuracy": 0.8666666666666667,
-                "MAE": 0.0784313753247261
+            "0.00392": {
+                "Accuracy_": 32.8125,
+                "Accuracy_user": 32.8125,
+                "ASR_": 58.82352941176471,
+                "Clean_Accuracy_": 79.6875,
+                "MAE_": 0.003275992115959525
             },
-            "0.19607843137254902": {
-                "Accuracy": 0.8333333333333334,
-                "Accuracy_user": 83.33333333333334,
-                "ASR": 0.038461538461538464,
-                "Clean accuracy": 0.8666666666666667,
-                "MAE": 0.19607843458652496
+            "0.01961": {
+                "Accuracy_": 0,
+                "Accuracy_user": 0,
+                "ASR_": 100,
+                "Clean_Accuracy_": 79.6875,
+                "MAE_": 0.012918688356876373
             },
-            "0.5882352941176471": {
-                "Accuracy": 0.6333333333333333,
-                "Accuracy_user": 63.33333333333333,
-                "ASR": 0.2692307692307692,
-                "Clean accuracy": 0.8666666666666667,
-                "MAE": 0.3921568691730499
+            "0.05882": {
+                "Accuracy_": 0,
+                "Accuracy_user": 0,
+                "ASR_": 100,
+                "Clean_Accuracy_": 79.6875,
+                "MAE_": 0.015992546454072
             }
         }
     }

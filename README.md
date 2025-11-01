@@ -4,20 +4,19 @@ This Python script generates comprehensive HTML reports from JSON data containin
 
 ## Features
 
-- **Clear style**:
-  - Clear color palette without colors being too vibrant
-  - Drop-down lists to reduce cluttering
-  - Visual grouping
-- **Three Main Sections**:
+- **Three Sections**:
   1. Model and experiment configuration overview
   2. Complete results table
   3. Data visualizations using Matplotlib
-- **Mobile Responsive**: Works on all device sizes
+- **Details**:
+  - Metrics without `_` at the end are treated as user metrics and put to the end
+  - Metrics with names starting with `Clean_` (case-insensitive) are considered to be calculated on unperturbed samples and should have equal values across experiments; a warning is printed otherwise
+  - Metrics with names `X` and `Clean_X` (case-insensitive) are grouped in plots and in the table
 
 ## Requirements
 
-- Python 3.6+
-- matplotlib
+- Python 3.10.18 or compatible
+- matplotlib 3.10.7 or compatible
 
 ## Installation
 
@@ -35,12 +34,14 @@ python generate_report.py
 
 ### Custom Input/Output Files
 ```bash
-python generate_report.py -i input_file.json -o my_report.html
+python generate_report.py -i input_file.json -o my_report.html -p ./plots/ -PTp problem_types.json
 ```
 
 ### Command Line Arguments
 - `-i, --input`: Path to input JSON file (default: report_dict.json)
 - `-o, --output`: Output HTML file path (default: robustness_report.html)
+- `-p, --plots-path`: Path to output plots directory (default: .)
+- `-PTp, --problem-types-path`: Path to problem types JSON file (default: ./problem_types.json)
 
 ## JSON Input Format
 
@@ -49,7 +50,7 @@ The input JSON should have the following structure:
 ```json
 {
     "desc": {
-        "problem_type": "Problem Type Name",
+        "problem_type": "Problem type name",
         "model_name": "model_name",
         "model_parameters": { // all values are dictionaries
             "parameter1": { // values of a parameter cannot be dictionaries
@@ -83,15 +84,17 @@ The input JSON should have the following structure:
         },
         "metrics": { // keys represent variable parameter values
             "variable_param_value1": { // keys inside each variable_param_value must be the same
-                "Metric 1": 0.8333333333333334, // can be int or float
+                "Metric_1_": 0.8333333333333334, // can be int or float
                 // ...
-                "Metric N": 0.0784313753247261
+                "Metric_N-1": 0.0784313753247261, // treated as user metric
+                "Metric_N_": 83.3333333333333334 // treated as non-user metric
             },
             // ...
             "variable_param_valueV": {
-                "Metric 1": 0.6333333333333333,
+                "Metric_1_": 0.6333333333333333,
                 // ...
-                "Metric N": 0.3921568691730499
+                "Metric_N-1": 0.3921568691730499,
+                "Metric_N_": 63.3333333333333334
             }
         }
     }
