@@ -77,12 +77,12 @@ def ensure_metric_floats(metrics: dict[str, dict[str, Any]]) -> dict[str, dict[s
 
 
 def make_tables(report: dict[str, Any]) -> str:
-    """Return HTML for the single metrics table, with Clean X after X (case-insensitive)."""
+    """Return HTML for the single metrics table, with Clean_X after X (case-insensitive)."""
     experiments = report["experiments"]
     var_name = experiments["variable_param_name"]
     metrics = ensure_metric_floats(experiments["metrics"])
 
-    # columns: var_name, then metric keys, with Clean X after X (case-insensitive)
+    # columns: var_name, then metric keys, with Clean_X after X (case-insensitive)
     sample = next(iter(metrics.values()))
     metric_keys = list(sample.keys())
 
@@ -90,18 +90,17 @@ def make_tables(report: dict[str, Any]) -> str:
     user_metrics = [k for k in metric_keys if not k.endswith("_")]
     non_user_metrics = [k for k in metric_keys if k.endswith("_")]
 
-    # Build mapping: for each X, if Clean X (case-insensitive) exists, place after X
+    # Build mapping: for each X, if Clean_X (case-insensitive) exists, place after X
     used = set()
     ordered_keys = []
-    lower_keys = {k.lower(): k for k in non_user_metrics}
     for k in non_user_metrics:
         kl = k.lower()
-        if kl.startswith("clean "):
+        if kl.startswith("clean_"):
             continue
         ordered_keys.append(k)
         used.add(k)
         clean_key = None
-        clean_name = f"clean {k}".lower()
+        clean_name = f"clean_{k}".lower()
         for mk in non_user_metrics:
             if mk.lower() == clean_name:
                 clean_key = mk
@@ -109,7 +108,7 @@ def make_tables(report: dict[str, Any]) -> str:
         if clean_key:
             ordered_keys.append(clean_key)
             used.add(clean_key)
-    # Add any remaining keys (e.g., only Clean X present)
+    # Add any remaining keys (e.g., only Clean_X present)
     for k in non_user_metrics:
         if k not in used:
             ordered_keys.append(k)
@@ -156,10 +155,10 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
     user_metrics = [k for k in metric_keys if not k.endswith("_")]
     non_user_metrics = [k for k in metric_keys if k.endswith("_")]
 
-    # detect Clean {X} patterns (case-insensitive)
+    # detect Clean_{X} patterns (case-insensitive)
     clean_map = {}
     for k in metric_keys:
-        if k.lower().startswith("clean "):
+        if k.lower().startswith("clean_"):
             base = k[6:].strip()
             clean_map[base.lower()] = k
 
@@ -167,11 +166,11 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
     # For each base metric to plot: either k or base if clean exists
     to_plot_bases = []
     for k in non_user_metrics:
-        if k.lower().startswith("clean "):
+        if k.lower().startswith("clean_"):
             continue
         to_plot_bases.append(k)
     for k in user_metrics:
-        if k.lower().startswith("clean "):
+        if k.lower().startswith("clean_"):
             continue
         to_plot_bases.append(k)
 
@@ -200,7 +199,7 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
             ys_clean = [metrics[p].get(clean_key, float("nan")) for p in raw_x]
             all_same = all(abs(y - ys_clean[0]) < 1e-9 for y in ys_clean)
             if not all_same:
-                print(f"Warning: Clean {metric_name} values differ across attack params")
+                print(f"Warning: Clean_{metric_name} values differ across attack params")
             avg_clean = float(ys_clean[0])
             if can_plot_numeric:
                 plt.axhline(avg_clean, color="#bcd4e6", linestyle="--", label="Clean")
