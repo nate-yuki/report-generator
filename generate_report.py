@@ -19,7 +19,7 @@ PALETTE = {
 def read_json(path: str) -> dict[str, Any]:
     """Load dictionary from JSON file at path."""
     try:
-        with open(path, encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Error: File {path} not found.")
@@ -29,18 +29,42 @@ def read_json(path: str) -> dict[str, Any]:
         return None
 
 
+def safe_int(s: str):
+    try:
+        return int(s)
+    except Exception:
+        return None
+
+
 def safe_float(s: str):
     try:
         return float(s)
     except Exception:
         return None
 
+def try_make_num(values: dict[str, dict[str, Any]], sort: bool = False) -> dict[int | float, dict[str, Any]]:
+    """If possible, converts all elements in values to ints, otherwise converts every convertible element to float"""
+    all_numeric = True
+    converted = [safe_int(v) for v in values]
+    if any(v is None for v in converted):
+        converted = [safe_float(v) for v in values]
+        if any(v is None for v in converted):
+            converted = [c if c is not None else v for v, c in zip(values, converted)]
+            all_numeric = False
+    if sort and all_numeric:
+        converted.sort()
+    return converted
 
-def format_value(v: Any) -> str:
+
+def format_value(v: Any, max_decimals: int = 5) -> str:
     if isinstance(v, float):
-        return f"{v:.5f}"
+        if abs(v) >= 10 ** -max_decimals and abs(v) < 10 ** max_decimals or v == 0:
+            return f"{v:.{max_decimals + 1 - len(str(int(v)))}f}"
+        return f"{v:.{max(1, max_decimals - 4)}e}"
     if isinstance(v, int):
-        return f"{v}"
+        if abs(v) <= 10 ** (max_decimals + 2):
+            return f"{v}"
+        return f"{v:.{max(0, max_decimals - 4)}e}"
     return str(v)
 
 
@@ -61,7 +85,7 @@ def flatten_param_dict(d: dict[str, Any], indent: int = 0) -> list[str]:
                 for ik, iv in v.items():
                     out.extend(flatten_param_dict({ik: iv}, indent + 1))
         else:
-            # Format all floats to 4 decimals, keep ints as is
+            # Format all floats, keep ints as is
             if isinstance(v, (int, float)):
                 out.append(f"{pad}{k}: {format_value(v)}")
             else:
@@ -76,7 +100,10 @@ def ensure_metric_floats(metrics: dict[str, dict[str, Any]]) -> dict[str, dict[s
     return out
 
 
-def make_tables(report: dict[str, Any]) -> str:
+def make_tables(
+    report: dict[str, Any],
+    sort_param_values: bool = False
+) -> str:
     """Return HTML for the single metrics table, with Clean_X after X (case-insensitive)."""
     experiments = report["experiments"]
     var_name = experiments["variable_param_name"]
@@ -123,8 +150,10 @@ def make_tables(report: dict[str, Any]) -> str:
     header_cells = [f"<th>{var_name}</th>"] + [f"<th>{k}</th>" for k in ordered_keys]
     html.append("<tr>" + "".join(header_cells) + "</tr>")
 
-    for param, m in metrics.items():
-        row = [f"<td>{format_value(safe_float(param) if safe_float(param) is not None else param)}</td>"]
+    param_values = list(metrics.keys())
+    param_values = try_make_num(param_values, sort=sort_param_values)
+    for param_value, m in zip(param_values, metrics.values()):
+        row = [f"<td>{format_value(param_value)}</td>"]
         for k in ordered_keys:
             row.append(f'<td>{format_value(m.get(k, ""))}</td>')
         html.append("<tr>" + "".join(row) + "</tr>")
@@ -133,20 +162,24 @@ def make_tables(report: dict[str, Any]) -> str:
     return "\n".join(html)
 
 
-def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
+def plot_metrics(
+    report: dict[str, Any],
+    out_dir: str,
+    sort_param_values: bool = False
+) -> list[str]:
     """Plot metrics from report and store plots in out_dir."""
     experiments = report["experiments"]
     var_name = experiments["variable_param_name"]
     metrics = ensure_metric_floats(experiments["metrics"])
 
-    # Determine x values: try to convert keys to floats
+    # Determine x values: try to convert keys to ints or floats
     raw_x = list(metrics.keys())
-    x_converted = [safe_float(k) for k in raw_x]
-    can_plot_numeric = all(v is not None for v in x_converted)
-    if can_plot_numeric:
-        x = [float(v) for v in x_converted]
-    else:
+    x = try_make_num(raw_x, sort=sort_param_values)
+    numeric_ticks = all(safe_float(v) is not None for v in x)
+    if not numeric_ticks:
+        # For string values, use evenly spaced x positions
         x = list(range(len(raw_x)))
+    int_ticks = all(safe_int(v) is not None for v in raw_x)
 
     sample = next(iter(metrics.values()))
     metric_keys = list(sample.keys())
@@ -193,6 +226,15 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
         )
         plt.plot(x, ys, marker="o" if len(x) < 7 else None, color="#5a8bb0", label="Attacked")
 
+        if numeric_ticks:
+            # Force integer ticks for integer parameters
+            plt.locator_params(axis="x", integer=int_ticks)
+        else:
+            # For string values, set the x-ticks to the formatted values
+            formatted_ticks = [format_value(x) for x in try_make_num(raw_x)]
+            rotate_ticks = len(formatted_ticks) * max(len(str(val)) for val in formatted_ticks) >= 49
+            plt.xticks(x, formatted_ticks, rotation=45 if rotate_ticks else 0, ha="right" if rotate_ticks else "center")
+
         clean_key = clean_map.get(metric_name.lower())
         legend_needed = False
         if clean_key:
@@ -201,7 +243,7 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
             if not all_same:
                 print(f"Warning: Clean_{metric_name} values differ across attack params")
             avg_clean = float(ys_clean[0])
-            if can_plot_numeric:
+            if numeric_ticks:
                 plt.axhline(avg_clean, color="#bcd4e6", linestyle="--", label="Clean")
             else:
                 plt.plot(x, [avg_clean] * len(x), color="#bcd4e6", linestyle="--", label="Clean")
@@ -210,8 +252,6 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
         plt.title(metric_name)
         plt.xlabel(var_name)
         plt.ylabel("значение")
-        if can_plot_numeric:
-            plt.xscale("linear")
         plt.grid(color="#c5d6e6", linestyle="-", linewidth=0.8)
         if legend_needed:
             plt.legend()
@@ -225,7 +265,12 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
     return generated
 
 
-def build_report_html(report: dict[str, Any], plots: list[str], problem_types: dict[str, str]) -> str:
+def build_report_html(
+    report: dict[str, Any],
+    plots: list[str],
+    problem_types: dict[str, str],
+    sort_param_values: bool = False
+) -> str:
     """Build HTML report string from the given report dictionary and list of plot paths."""
     desc = report["desc"]
     experiments = report["experiments"]
@@ -309,12 +354,10 @@ def build_report_html(report: dict[str, Any], plots: list[str], problem_types: d
     s1.append(
         '<li><details><summary><span class="param-key">Значения переменного параметра</span></summary><div class="param-values">'
     )
-    for v in experiments.get("metrics", {}).keys():
-        val = safe_float(v)
-        if val is not None:
-            s1.append(f'<div class="param-item">{format_value(val)}</div>')
-        else:
-            s1.append(f'<div class="param-item">{v}</div>')
+    param_values = list(experiments.get("metrics", {}).keys())
+    param_values = try_make_num(param_values, sort=sort_param_values)
+    for param_value in param_values:
+        s1.append(f'<div class="param-item">{format_value(param_value)}</div>')
     s1.append("</div></details></li></ul></div>")
     s1.append("</div>")
 
