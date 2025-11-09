@@ -287,7 +287,7 @@ def build_report_html(
     s1.append('<div class="section-row">')
     # Model info
     s1.append('<div class="section-card"><h3 class="section-title">Атакуемая модель</h3><ul class="pretty-list">')
-    problem_type = desc.get("problem_type")
+    problem_type = desc.get("problem_type").replace("_", " ").capitalize()
     problem_type_ru = problem_types[problem_type]
     s1.append(f"<li><span class='param-key'>Задача:</span> {problem_type_ru} ({problem_type})</li><hr>")
     s1.append(f"<li><span class='param-key'>Модель:</span> {desc.get('model_name')}</li><hr>")
