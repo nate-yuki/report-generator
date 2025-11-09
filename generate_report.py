@@ -217,8 +217,8 @@ def plot_metrics(report: dict[str, Any], out_dir: str) -> list[str]:
             plt.legend()
         plt.tight_layout()
 
-        plot_path = os.path.join(out_dir, f"{metric_name}.png")
-        plt.savefig(plot_path, format="png", dpi=150)
+        plot_path = os.path.join(out_dir, f"{metric_name}.svg")
+        plt.savefig(plot_path, format="svg", dpi=150)
         plt.close()
         generated.append(plot_path)
 

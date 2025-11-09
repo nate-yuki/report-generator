@@ -1,6 +1,7 @@
 *.html
 *.json
 *.png
+*.svg
 !examples/*
 drafts/
 !problem_types.json
