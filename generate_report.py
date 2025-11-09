@@ -381,7 +381,7 @@ def build_report_html(report: dict[str, Any], plots: list[str], problem_types: d
     </style>
     """
 
-    html = f'<html><head><meta charset="utf-8"><title>Отчет устойчивости</title>{css}</head><body>'
+    html = f'<html><head><meta charset="utf-8"><link rel="icon" href="https://mlm.intra.ispras.ru/assets/favicon.ico"><title>Отчет устойчивости</title>{css}</head><body>'
     html += "\n".join(s1)
     html += "\n".join(s2)
     html += "\n".join(s3)
