@@ -148,7 +148,13 @@ def make_tables(
     html = []
     html.append('<table class="metrics-table">')
     # header
-    header_cells = [f"<th>{var_name}</th>"] + [f"<th>{k}</th>" for k in ordered_keys]
+    header_cells = [f"<th>{var_name}</th>"]
+    for k in ordered_keys:
+        # Try to find metric name in metrics_meta
+        display_name = k
+        if k in metrics_meta:
+            display_name = metrics_meta[k].get("name", k)
+        header_cells.append(f"<th>{display_name}</th>")
     html.append("<tr>" + "".join(header_cells) + "</tr>")
 
     param_values = list(metrics.keys())
@@ -251,7 +257,11 @@ def plot_metrics(
                 plt.plot(x, [avg_clean] * len(x), color="#bcd4e6", linestyle="--", label="Clean")
             legend_needed = True
 
-        plt.title(metric_name)
+        display_name = metric_name
+        if metric_name in metrics_meta:
+            display_name = metrics_meta[metric_name].get("name", metric_name)
+        plt.title(display_name)
+
         plt.xlabel(var_name)
         plt.ylabel("значение")
         plt.grid(color="#c5d6e6", linestyle="-", linewidth=0.8)
