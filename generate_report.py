@@ -267,7 +267,45 @@ def plot_metrics(
         plt.grid(color="#c5d6e6", linestyle="-", linewidth=0.8)
         if legend_needed:
             plt.legend()
-        plt.tight_layout()
+
+        arrow_drawn = False
+        meta = metrics_meta.get(metric_name, None)
+        if meta is not None:
+            higher_better = meta.get("higher_better")
+            if higher_better is not None:
+                arrow_drawn = True
+                max_y_tick_len = max(len(label.get_text()) for label in plt.yticks()[1])
+                plt.subplots_adjust(left=0.1 + 0.1 / 6 * max_y_tick_len)
+
+                # Fixed arrow position in figure fraction
+                arrow_x = 0.04
+                text_x = 0.015
+                bottom_y = 0.12
+                top_y = 1 - bottom_y
+                if higher_better:
+                    top_y, bottom_y = bottom_y, top_y
+
+                plt.annotate(
+                    "",
+                    xy=(arrow_x, bottom_y), xycoords="figure fraction",
+                    xytext=(arrow_x, top_y), textcoords="figure fraction",
+                    arrowprops=dict(
+                        color="#5a8bb0",
+                        lw=plt.rcParams["lines.linewidth"],
+                        headwidth=plt.rcParams["lines.markersize"],
+                        headlength=plt.rcParams["lines.markersize"],
+                    ),
+                    clip_on=False,
+                )
+                plt.text(
+                    text_x, 0.5, f"{'больше' if higher_better else 'меньше'} — лучше",
+                    ha="center", va="center", rotation=90,
+                    fontsize=plt.rcParams["legend.fontsize"], color="#5a8bb0",
+                    transform=plt.gcf().transFigure,
+                    clip_on=False,
+                )
+        if not arrow_drawn:
+            plt.tight_layout()
 
         plot_path = os.path.join(out_dir, f"{metric_name}.svg")
         plt.savefig(plot_path, format="svg", dpi=150)
