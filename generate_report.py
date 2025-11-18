@@ -102,6 +102,7 @@ def ensure_metric_floats(metrics: dict[str, dict[str, Any]]) -> dict[str, dict[s
 
 def make_tables(
     report: dict[str, Any],
+    metrics_meta: dict[str, dict[str, Any]],
     sort_param_values: bool = False
 ) -> str:
     """Return HTML for the single metrics table, with Clean_X after X (case-insensitive)."""
@@ -165,6 +166,7 @@ def make_tables(
 def plot_metrics(
     report: dict[str, Any],
     out_dir: str,
+    metrics_meta: dict[str, dict[str, Any]],
     sort_param_values: bool = False
 ) -> list[str]:
     """Plot metrics from report and store plots in out_dir."""
@@ -269,6 +271,7 @@ def build_report_html(
     report: dict[str, Any],
     plots: list[str],
     problem_types: dict[str, str],
+    metrics_meta: dict[str, dict[str, Any]],
     sort_param_values: bool = False
 ) -> str:
     """Build HTML report string from the given report dictionary and list of plot paths."""
@@ -365,7 +368,7 @@ def build_report_html(
     s2 = []
     s2.append('<h2 class="section-title">Метрики</h2>')
     s2.append('<div class="section-card section-metrics section-wide">')
-    s2.append(make_tables(report))
+    s2.append(make_tables(report, metrics_meta))
     s2.append("</div>")
 
     # Section 3: plots, responsive columns
@@ -446,6 +449,12 @@ def main():
         default="./problem_types.json",
         help="Path to problem types JSON file",
     )
+    parser.add_argument(
+        "-m",
+        "--metrics-path",
+        default="./metrics.json",
+        help="Path to metrics metadata JSON file",
+    )
 
     args = parser.parse_args()
 
@@ -457,18 +466,25 @@ def main():
     if problem_types is None:
         return
 
+    metrics_meta = read_json(args.metrics_path)
+    if metrics_meta is None:
+        return
+    desc = report.get("desc", {})
+    problem_type = desc.get("problem_type", "")
+    metrics_meta = metrics_meta[problem_type]
+
     if not os.path.exists(args.plots_path):
         os.mkdir(args.plots_path)
 
     # generate plots
-    plots = plot_metrics(report, args.plots_path)
+    plots = plot_metrics(report, args.plots_path, metrics_meta)
 
     # make plot paths relative
     for idx in range(len(plots)):
         plots[idx] = os.path.relpath(plots[idx], start=os.path.dirname(args.output))
 
     # build html
-    html = build_report_html(report, plots, problem_types)
+    html = build_report_html(report, plots, problem_types, metrics_meta)
 
     with open(args.output, "w", encoding="utf-8") as f:
         f.write(html)

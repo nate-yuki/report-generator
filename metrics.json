@@ -1,0 +1,193 @@
+{
+    "image_classification": {
+        "ASR_": {
+            "name": "ASR_",
+            "description": "ASR (Attack Success Rate) — доля успешных атак среди всех предпринятых попыток. Учитываются только те попытки, на которых исходная модель правильно классифицирует исходное изображение.",
+            "higher_better": false,
+            "range": [0.0, 1.0]
+        },
+        "Accuracy_": {
+            "name": "Accuracy_",
+            "description": "Accuracy — доля правильно классифицированных изображений среди всех изображений в выборке после атаки.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "Clean_Accuracy_": {
+            "name": "Clean_Accuracy_",
+            "description": "Clean Accuracy — точность модели на исходных (не атакованных) изображениях.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "MAE_": {
+            "name": "Perturbation_norm_",
+            "description": "Perturbation norm — средняя норма разницы между чистыми и атакованными изображениями (используется l1 норма, деленная на n, где n = число писелей × число каналов).",
+            "higher_better": null,
+            "range": [0.0, null]
+        }
+    },
+
+    "image_segmentation": {
+        "Accuracy_": {
+            "name": "Accuracy_",
+            "description": "Accuracy — доля пикселей, правильно отнесенных к соответствующему классу после атаки.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "IOU_": {
+            "name": "IoU_",
+            "description": "IoU (Intersection over Union) — усредненная мера пересечения предсказанной и истинной масок сегментации, вычисленная после проведения атаки. Пересечение масок делится на объединение масок и усредняется по всем классам и затем по всем картинкам.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "Clean_Accuracy_": {
+            "name": "Clean_Accuracy_",
+            "description": "Clean Accuracy — попиксельная точность сегментации на исходных (не атакованных) изображениях.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "Clean_IOU_": {
+            "name": "Clean_IoU_",
+            "description": "Clean IoU — значение IoU на исходных (не атакованных) изображениях.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "MAE_": {
+            "name": "Perturbation_norm_",
+            "description": "Perturbation norm — средняя норма разницы между чистыми и атакованными изображениями (используется l1 норма, деленная на n, где n = число писелей × число каналов).",
+            "higher_better": null,
+            "range": [0.0, null]
+        }
+    },
+
+    "image_detection": {
+        "mAP_": {
+            "name": "mAP_",
+            "description": "mAP (mean Average Precision) — средняя точность обнаружения объектов по всем классам.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "Clean_mAP_": {
+            "name": "Clean_mAP_",
+            "description": "Clean mAP — средняя точность обнаружения на исходных (не атакованных) изображениях.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "IOU_": {
+            "name": "IoU_",
+            "description": "IoU (Intersection over Union) — мера совпадения предсказанного и истинного ограничивающего прямоугольника, вычисленная после проведения атаки. Пересечение прямоугольников делится на объединение прямоугольников и усредняется по всем классам и затем по всем картинкам.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "Clean_IOU_": {
+            "name": "Clean_IoU_",
+            "description": "Clean IoU — значение IoU на исходных (не атакованных) изображениях.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "MAE_": {
+            "name": "Perturbation_norm_",
+            "description": "Perturbation norm — средняя норма разницы между чистыми и атакованными изображениями (используется l1 норма, деленная на n, где n = число писелей × число каналов).",
+            "higher_better": null,
+            "range": [0.0, null]
+        }
+    },
+
+    "table_classification": {
+        "Accuracy_": {
+            "name": "Accuracy_",
+            "description": "Accuracy — доля правильно классифицированных записей таблицы.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "ASR_": {
+            "name": "ASR_",
+            "description": "ASR (Attack Success Rate) — доля успешных атак на записи таблицы, классифицированные верно моделью.",
+            "higher_better": false,
+            "range": [0.0, 1.0]
+        },
+        "Clean_Accuracy_": {
+            "name": "Clean_Accuracy_",
+            "description": "Clean Accuracy — точность модели на исходных (не атакованных) табличных данных.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "MAE_": {
+            "name": "Perturbation_norm_",
+            "description": "Perturbation norm — средняя норма разницы между чистыми и атакованными записями таблицы (используется l1 норма, деленная на n, где n = число признаков).",
+            "higher_better": null,
+            "range": [0.0, null]
+        }
+    },
+
+    "table_regression": {
+        "MAE_": {
+            "name": "Perturbation_norm_",
+            "description": "Perturbation norm — средняя норма разницы между чистыми и атакованными записями таблицы (используется l1 норма, деленная на n, где n = число признаков).",
+            "higher_better": null,
+            "range": [0.0, null]
+        },
+        "MAE_result_": {
+            "name": "MAE_result_",
+            "description": "MAE result — итоговая средняя абсолютная ошибка на атакованных данных.",
+            "higher_better": false,
+            "range": [0.0, null]
+        },
+        "Clean_MAE_result_": {
+            "name": "Clean_MAE_result_",
+            "description": "Clean MAE result — значение MAE на исходных (не атакованных) данных.",
+            "higher_better": false,
+            "range": [0.0, null]
+        },
+        "R2_": {
+            "name": "R2_",
+            "description": "R^2 (коэффициент детерминации) — показывает долю дисперсии, объясненной моделью после атаки.",
+            "higher_better": true,
+            "range": [null, 1.0]
+        },
+        "Clean_R2_": {
+            "name": "Clean_R2_",
+            "description": "Clean R^2 — коэффициент детерминации на исходных (не атакованных) данных.",
+            "higher_better": true,
+            "range": [null, 1.0]
+        },
+        "SMAPE_": {
+            "name": "SMAPE_",
+            "description": "SMAPE (Symmetric Mean Absolute Percentage Error) — симметричная средняя абсолютная процентная ошибка, вычисленная после проведения атаки.",
+            "higher_better": false,
+            "range": [0.0, 1.0]
+        },
+        "Clean_SMAPE_": {
+            "name": "Clean_SMAPE_",
+            "description": "Clean SMAPE — значение SMAPE на исходных (не атакованных) данных.",
+            "higher_better": false,
+            "range": [0.0, 1.0]
+        }
+    },
+
+    "time_series_classification": {
+        "Accuracy_": {
+            "name": "Accuracy_",
+            "description": "Accuracy — доля правильно классифицированных временных рядов после проведения атаки.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "ASR_": {
+            "name": "ASR_",
+            "description": "ASR (Attack Success Rate) — доля успешных атак на временные ряды среди всех корректно классифицированных исходных примеров.",
+            "higher_better": false,
+            "range": [0.0, 1.0]
+        },
+        "Clean_Accuracy_": {
+            "name": "Clean_Accuracy_",
+            "description": "Clean Accuracy — точность классификации временных рядов на исходных (не атакованных) данных.",
+            "higher_better": true,
+            "range": [0.0, 1.0]
+        },
+        "MAE_": {
+            "name": "Perturbation_norm_",
+            "description": "Perturbation norm — средняя норма разницы между чистыми и атакованными временными рядами (используется l1 норма, деленная на n, где n = число временных измерений).",
+            "higher_better": null,
+            "range": [0.0, null]
+        }
+    }
+}

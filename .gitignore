@@ -5,3 +5,4 @@
 !examples/*
 drafts/
 !problem_types.json
+!metrics.json
