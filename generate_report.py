@@ -493,8 +493,100 @@ def build_report_html(
     # Close section 3
     s3.append('</details>')
 
+    # Section 4: Comments (auto-generated quantitative remarks)
+    s4 = []
+    if verbose:
+        s4.append('<details open><summary class="section-summary">Комментарии</summary>')
+        s4.append('<div class="section-card section-comments section-wide">')
+        for idx, exp in enumerate(experiments, start=1):
+            if idx > 1:
+                s4.append('<hr class="section-separator">')
+            s4.append(f'<h3 class="section-subtitle">Эксперимент {idx}: {exp.get("attack")}</h3>')
+            s4.append('<ul class="pretty-list">')
+            exp_metrics = ensure_metric_floats(exp.get("metrics", {}))
+            comments_added = False
+            # last param value
+            if exp_metrics:
+                last_key = list(exp_metrics.keys())[-1]
+                last_vals = exp_metrics[last_key]
+                for mname, meta in (metrics_meta.items() if isinstance(metrics_meta, dict) else []):
+                    # Skip if this is a Clean_ metric
+                    if mname.lower().startswith("clean_"):
+                        continue
+
+                    higher_better = meta.get("higher_better")
+                    if higher_better is None:
+                        continue
+
+                    metric_key = mname
+                    clean_key = f"Clean_{metric_key}"
+
+                    # find exact key in last_vals ignoring case
+                    found_metric = None
+                    found_clean = None
+                    for k in last_vals.keys():
+                        if k.lower() == metric_key.lower():
+                            found_metric = k
+                        if k.lower() == clean_key.lower():
+                            found_clean = k
+
+                    if found_metric and found_clean:
+                        clean_val = exp_metrics[list(exp_metrics.keys())[0]].get(found_clean)
+                        last_val = last_vals.get(found_metric)
+                        if clean_val is None or last_val is None:
+                            continue
+
+                        comments_added = True
+                        # percent change
+                        try:
+                            pct = ((last_val - clean_val) / (abs(clean_val) + 1e-12)) * 100.0
+                        except Exception:
+                            pct = 0.0
+                        action = "увеличилась" if last_val > clean_val else "уменьшилась"
+                        direction = "увеличение" if last_val > clean_val else "уменьшение"
+                        rng = meta.get("range")
+                        rng_str = ""
+                        if isinstance(rng, list):
+                            left = "-∞" if rng[0] is None else str(rng[0])
+                            right = "+∞" if rng[1] is None else str(rng[1])
+                            better_direction = "больше" if higher_better else "меньше"
+                            rng_str = f"(диапазон: {left} – {right}, {better_direction} — лучше)"
+                        s4.append(f"<li>Метрика <strong>{meta.get('name', metric_key)}</strong> {rng_str} {action} с {format_value(clean_val, 2)} до {format_value(last_val, 2)} ({direction} на {abs(pct):.2f}%)</li><hr>")
+
+            if not comments_added:
+                s4.append("<li>Нет метрик для анализа</li><hr>")
+            s4.append('</ul>')
+        s4.append('</div>')
+
+        # Close section 4
+        s4.append('</details>')
+
+    # Section 5: Notations (metric descriptions)
+    s5 = []
+    if verbose:
+        s5.append('<details open><summary class="section-summary">Обозначения</summary>')
+        s5.append('<div class="section-card section-notations section-wide"><ul class="pretty-list">')
+        for mname, meta in (metrics_meta.items() if isinstance(metrics_meta, dict) else []):
+            desc_text = meta.get("description", "").rstrip(".")
+            rng = meta.get("range")
+            if isinstance(rng, list):
+                left = "−∞" if rng[0] is None else str(rng[0])
+                right = "+∞" if rng[1] is None else str(rng[1])
+                higher_better = meta.get("higher_better")
+                higher_better_comment = ""
+                if higher_better is not None:
+                    higher_better_comment = f", {'больше' if higher_better else 'меньше'} — лучше"
+                rng_text = f"Диапазон: {left} – {right}{higher_better_comment}."
+            else:
+                rng_text = ""
+            s5.append(f"<li><strong>{meta.get('name', mname)}:</strong> {desc_text}. {rng_text}</li><hr>")
+        s5.append('</ul></div>')
+
+        # Close section 5
+        s5.append('</details>')
+
     # Close global-card
-    s3.append('</div>')  
+    s5.append('</div>')  
 
     base_css = """
     body { background: #f7f8fa; color: #243b44; font-family: Arial, sans-serif; margin: 0; padding: 0; }
@@ -640,6 +732,8 @@ def build_report_html(
     html += "\n".join(s1)
     html += "\n".join(s2)
     html += "\n".join(s3)
+    html += "\n".join(s4)
+    html += "\n".join(s5)
     html += "</body></html>"
     return html
 
